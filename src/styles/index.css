@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#game-root,
+#ui-root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0c0a12;
+  overflow: hidden;
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+  color: #f4ecd8;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Phaser canvas sits behind; React UI overlays it. */
+#game-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#game-root canvas {
+  image-rendering: pixelated;
+}
+
+#ui-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+/* Only interactive UI captures clicks; the rest passes through to the game. */
+#ui-root .ui-interactive,
+#ui-root button,
+#ui-root input,
+#ui-root select {
+  pointer-events: auto;
+}
+
+ruby rt {
+  font-size: 0.55em;
+  color: #9db4ff;
+  font-weight: 500;
+  user-select: none;
+}
+
+@keyframes word-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 0 rgba(91, 140, 255, 0);
+  }
+  50% {
+    text-shadow: 0 0 9px rgba(91, 140, 255, 0.95);
+  }
+}
+.word-new {
+  animation: word-glow 1.6s ease-in-out infinite;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
+
+.panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: #3a3450;
+  border-radius: 4px;
+}

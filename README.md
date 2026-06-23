@@ -1,0 +1,96 @@
+# 言葉クエスト · Mushoku Tensei: Kotoba Quest
+
+> A 2D top-down action RPG that teaches you Japanese. Walk the world, talk to people, and
+> cast spells with the words you master. **Language is magic.**
+
+A fan project inspired by *Mushoku Tensei* — you play Rudeus, reincarnated into a world of
+magic, re-learning how to read and speak. Built with **Phaser 3 + React + TypeScript**.
+
+---
+
+## ✨ The idea
+
+Rudeus has to re-learn language in his new life — and so do you. So the Japanese learning
+*is* the game's magic system:
+
+- **Walk** a tile world (Phaser), talk to NPCs, and read everything in Japanese.
+- **Tap glowing words** in dialogue to look them up and add them to your **Grimoire**.
+- **Fight** Mana Beasts by solving quick Japanese challenges (pick the reading, the meaning,
+  or type the kana). Correct + fast = a stronger spell.
+- Words you **master** (via the FSRS spaced-repetition algorithm) become your most powerful
+  spells. Studying literally levels you up.
+- A single **Japanese level** setting (Beginner → N5 → N4–N3 → Advanced) rescales furigana,
+  romaji, and support — switchable any time.
+
+## 🎮 Controls
+
+| Action | Keys |
+| --- | --- |
+| Move | `WASD` or arrow keys |
+| Talk / Fight | `Space` (near an NPC or enemy) |
+| Advance dialogue | `Space` / click |
+| Open Grimoire / Settings | buttons, top-right |
+
+## 🚀 Run it locally
+
+Requires Node 18+.
+
+```bash
+npm install
+npm run dev      # start the dev server (http://localhost:5173)
+```
+
+Other scripts:
+
+```bash
+npm run build      # typecheck + production build (outputs to dist/)
+npm run test       # unit tests (Vitest)
+npm run lint       # ESLint
+npm run typecheck  # tsc --noEmit
+```
+
+## 🌐 Deploy (GitHub Pages)
+
+Pushing to `main` builds and deploys via GitHub Actions (`.github/workflows/deploy.yml`).
+The Vite `base` is set to `/kotoba-quest/` for production — **if you rename the repo, update
+`base` in [`vite.config.ts`](vite.config.ts)** to match, or Pages assets will 404.
+
+## 🧱 Tech & architecture
+
+- **Phaser 3** renders the walkable world (tilemap, movement, collision, camera).
+- **React** renders all text/learning UI overlays (dialogue, furigana, dictionary, Grimoire,
+  combat) — so Japanese typography uses crisp DOM `<ruby>` furigana.
+- A small typed **event bus** (`src/bridge/events.ts`) connects the two.
+- **Zustand** holds player/save state (localStorage autosave).
+- **ts-fsrs** powers word mastery; **wanakana** handles kana input; **Tailwind** for styling.
+
+```
+src/
+  game/        Phaser scenes (Boot, World), maps, entities
+  ui/          React overlays (DialogueBox, BattleScreen, Grimoire, Settings, HUD…)
+  systems/     japanese (furigana/levels/dictionary/tts), srs, combat
+  content/     vocab decks, characters, dialogue, enemies
+  state/       Zustand store
+  bridge/      Phaser ↔ React event bus
+tests/         Vitest unit tests
+```
+
+## 🗺️ Roadmap
+
+- **M1 (done):** vertical slice — walkable village, Roxy's lesson, capture, one battle.
+- **M2:** SRS "Daily Training" review mode, quest log, more NPCs, map transitions.
+- **M3:** more chapters & maps, JLPT vocab decks + dictionary subset, grammar notes.
+- **M4:** CC0 art/audio pass, mobile/touch controls, accessibility, polish & release.
+
+## ⚖️ Legal & credits
+
+**This is a non-commercial fan project.** It is **not affiliated with, sponsored, or endorsed
+by** the creators, authors, or publishers of *Mushoku Tensei*. Please do not monetize it.
+
+- Code: **MIT** ([LICENSE](LICENSE)).
+- Story/character **names** reference *Mushoku Tensei* under fair/fan use; all **art and audio
+  are original** placeholder geometry (no assets from the anime or novels). See
+  [`public/assets/ASSETS_LICENSE.md`](public/assets/ASSETS_LICENSE.md).
+- Dictionary/vocabulary data licensing is documented in [CONTENT_LICENSE.md](CONTENT_LICENSE.md).
+
+Built as a personal Japanese-learning project. 頑張って! 🔥
