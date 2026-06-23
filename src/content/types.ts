@@ -64,6 +64,8 @@ export interface Challenge {
   promptLabel: string;
   answer: string;
   options: string[]; // empty for typeKana
+  timeMs: number; // how long the player has to answer
+  isNew?: boolean; // first encounters get extra scaffolding
 }
 
 export interface Settings {
@@ -71,6 +73,8 @@ export interface Settings {
   furigana: FuriganaMode;
   romaji: boolean;
   audio: boolean;
+  music: boolean;
+  sfx: boolean;
   textSpeed: number;
   darkMode: boolean;
 }

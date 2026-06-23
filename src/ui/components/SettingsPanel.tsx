@@ -93,6 +93,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
         <Toggle label="Romaji" value={settings.romaji} onChange={(v) => update({ romaji: v })} />
         <Toggle label="Voice (audio)" value={settings.audio} onChange={(v) => update({ audio: v })} />
+        <Toggle label="Music" value={settings.music} onChange={(v) => update({ music: v })} />
+        <Toggle label="Sound effects" value={settings.sfx} onChange={(v) => update({ sfx: v })} />
         <Toggle label="Dark mode" value={settings.darkMode} onChange={(v) => update({ darkMode: v })} />
 
         <Row label="Text speed">

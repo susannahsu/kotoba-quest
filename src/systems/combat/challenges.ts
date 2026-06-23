@@ -1,14 +1,21 @@
-// Language-powered combat: turn a vocab word into a quick challenge, check answers
-// (kana/romaji tolerant via wanakana), and scale damage by mastery + answer speed.
+// Language-powered combat with graded difficulty: new words start as gentle recognition
+// (see the word + furigana, pick the meaning) and progress to recall (read it, then type it)
+// as mastery grows. Newer words also get more options removed and extra time.
 import { toKana, toRomaji } from 'wanakana';
 import type { Challenge, ChallengeKind } from '@/content/types';
 import { VOCAB, getVocab } from '@/content/vocab/n5-starter';
 
-const KINDS: ChallengeKind[] = ['reading', 'meaning', 'typeKana'];
-
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+export interface ChallengeOpts {
+  mastery?: number;
+  seen?: number;
+  kind?: ChallengeKind;
 }
+
+const TIME: Record<ChallengeKind, number> = {
+  meaning: 12000,
+  reading: 9500,
+  typeKana: 8500,
+};
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -24,27 +31,31 @@ function distractors(pool: string[], answer: string, n: number): string[] {
   return shuffle(unique).slice(0, n);
 }
 
-export function makeChallenge(vocabId: string, kind?: ChallengeKind): Challenge {
+/** Recognition → cued recall → free recall, based on how well the word is known. */
+export function pickKind(mastery = 0, seen = 0): ChallengeKind {
+  if (seen < 2 || mastery < 0.15) return 'meaning';
+  if (mastery < 0.5) return 'reading';
+  return 'typeKana';
+}
+
+export function makeChallenge(vocabId: string, opts: ChallengeOpts = {}): Challenge {
   const v = getVocab(vocabId);
   if (!v) throw new Error(`Unknown vocab: ${vocabId}`);
-  const k = kind ?? pick(KINDS);
+  const kind = opts.kind ?? pickKind(opts.mastery, opts.seen);
+  const seen = opts.seen ?? 0;
+  const isNew = seen < 1;
+  const distractCount = seen < 2 ? 2 : 3; // fewer choices while learning
+  const base = { vocabId, promptJp: v.jp, timeMs: TIME[kind], isNew };
 
-  if (k === 'meaning') {
-    const options = shuffle([v.en, ...distractors(VOCAB.map((x) => x.en), v.en, 3)]);
-    return { kind: k, vocabId, promptJp: v.jp, promptLabel: 'What does it mean?', answer: v.en, options };
+  if (kind === 'meaning') {
+    const options = shuffle([v.en, ...distractors(VOCAB.map((x) => x.en), v.en, distractCount)]);
+    return { ...base, kind, promptLabel: 'What does it mean?', answer: v.en, options };
   }
-  if (k === 'typeKana') {
-    return {
-      kind: k,
-      vocabId,
-      promptJp: v.jp,
-      promptLabel: 'Type the reading in kana',
-      answer: v.reading,
-      options: [],
-    };
+  if (kind === 'typeKana') {
+    return { ...base, kind, promptLabel: 'Type the reading in kana', answer: v.reading, options: [] };
   }
-  const options = shuffle([v.reading, ...distractors(VOCAB.map((x) => x.reading), v.reading, 3)]);
-  return { kind: 'reading', vocabId, promptJp: v.jp, promptLabel: 'How do you read it?', answer: v.reading, options };
+  const options = shuffle([v.reading, ...distractors(VOCAB.map((x) => x.reading), v.reading, distractCount)]);
+  return { ...base, kind, promptLabel: 'How do you read it?', answer: v.reading, options };
 }
 
 const normalize = (s: string): string => s.trim().toLowerCase().replace(/[、。，,.\s]/g, '');
@@ -53,12 +64,11 @@ export function checkAnswer(ch: Challenge, raw: string): boolean {
   if (ch.kind === 'typeKana') {
     const input = raw.trim();
     if (!input) return false;
-    if (input === ch.answer) return true; // typed kana directly
-    if (toKana(input) === ch.answer) return true; // typed romaji -> kana
-    return normalize(toRomaji(ch.answer)) === normalize(input); // typed romaji vs romaji
+    if (input === ch.answer) return true;
+    if (toKana(input) === ch.answer) return true;
+    return normalize(toRomaji(ch.answer)) === normalize(input);
   }
   if (ch.kind === 'meaning') {
-    // accept any comma-separated sense, e.g. "earth, soil"
     const senses = ch.answer.split(',').map(normalize);
     return senses.includes(normalize(raw));
   }

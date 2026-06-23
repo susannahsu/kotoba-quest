@@ -4,9 +4,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Settings } from '@/content/types';
 import {
+  gradeMastery,
   masteryScore,
   newMastery,
   reviewMastery,
+  type Grade,
   type MasteryRecord,
 } from '@/systems/srs/srs';
 import { LEVEL_PRESETS } from '@/systems/japanese/levels';
@@ -38,6 +40,7 @@ interface GameActions {
   resetSave: () => void;
   capture: (vocabId: string) => boolean;
   answer: (vocabId: string, correct: boolean, fast?: boolean) => void;
+  grade: (vocabId: string, grade: Grade) => void;
   masteryOf: (vocabId: string) => number;
   damage: (n: number) => void;
   heal: (n: number) => void;
@@ -56,6 +59,8 @@ const DEFAULT_SETTINGS: Settings = {
   furigana: 'all',
   romaji: true,
   audio: true,
+  music: true,
+  sfx: true,
   textSpeed: 28,
   darkMode: true,
 };
@@ -103,6 +108,12 @@ export const useGame = create<GameStore>()(
         set((s) => {
           const rec = s.mastery[vocabId] ?? newMastery();
           return { mastery: { ...s.mastery, [vocabId]: reviewMastery(rec, correct, fast) } };
+        }),
+
+      grade: (vocabId, g) =>
+        set((s) => {
+          const rec = s.mastery[vocabId] ?? newMastery();
+          return { mastery: { ...s.mastery, [vocabId]: gradeMastery(rec, g) } };
         }),
 
       masteryOf: (vocabId) => masteryScore(get().mastery[vocabId]),

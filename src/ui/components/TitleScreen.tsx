@@ -1,4 +1,5 @@
 import { useGame } from '@/state/store';
+import { audio } from '@/systems/audio/audio';
 
 export function TitleScreen() {
   const newGame = useGame((s) => s.newGame);
@@ -19,7 +20,11 @@ export function TitleScreen() {
         </p>
 
         <button
-          onClick={() => newGame()}
+          onClick={() => {
+            audio.init();
+            audio.playMusic('town');
+            newGame();
+          }}
           className="mt-8 rounded-xl bg-arcane px-8 py-3 text-lg font-bold text-white shadow-lg ring-1 ring-white/20 transition hover:scale-105 hover:bg-arcane/90"
         >
           新しい冒険 · New Game

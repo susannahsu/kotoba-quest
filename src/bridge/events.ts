@@ -6,8 +6,9 @@ import type { DialogueLine } from '@/content/types';
 export type GameEvents = {
   'dialogue:start': { lines: DialogueLine[]; tag?: string };
   'dialogue:end': { tag?: string };
-  'battle:start': { enemyId: string };
-  'battle:end': { won: boolean; enemyId: string };
+  'word:show': { vocabId: string };
+  'battle:start': { enemyId: string; instanceId?: string };
+  'battle:end': { won: boolean; enemyId: string; instanceId?: string };
   'toast': { text: string; tone?: 'info' | 'good' | 'bad' };
   'game:start': undefined;
 };

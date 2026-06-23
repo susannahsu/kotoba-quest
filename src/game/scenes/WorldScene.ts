@@ -1,35 +1,56 @@
-// The walkable overworld: tile rendering + collision, player movement, camera follow,
-// the interactable Roxy NPC, and the Mana Beast encounter. Talks to the React UI via `bus`.
+// The walkable overworld: tilemap + collision, animated player movement, camera,
+// and interactables — NPCs (talk), signs (read a word), item pickups (auto-capture),
+// and enemies (battle). Talks to the React UI via `bus`.
 import Phaser from 'phaser';
 import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
+import { audio } from '@/systems/audio/audio';
 import { roxyIntro } from '@/content/dialogue/roxy-intro';
+import { roxyAgainLines, sylphieLines } from '@/content/dialogue/extra';
+import { getVocab } from '@/content/vocab/n5-starter';
 import {
-  BEAST_POS,
   COLLIDE,
+  ENEMIES,
+  ITEMS,
   MAP_H,
   MAP_W,
-  ROXY_POS,
+  NPCS,
+  SIGNS,
   SPAWN,
   TILE,
   TILE_TEXTURE,
   buildVillage,
+  type EnemyPlacement,
+  type NpcPlacement,
 } from '../maps/village';
 
-const SPEED = 150;
-const INTERACT_DIST = 54;
+const SPEED = 156;
+const INTERACT_DIST = 56;
+const PICKUP_DIST = 26;
+
+type Facing = 'down' | 'up' | 'side';
+interface Interactable {
+  x: number;
+  y: number;
+  label: string;
+  act: () => void;
+}
 
 export class WorldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
-  private roxy!: Phaser.Physics.Arcade.Image;
-  private beast?: Phaser.Physics.Arcade.Image;
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private prompt!: Phaser.GameObjects.Text;
+  private facing: Facing = 'down';
   private locked = false;
-  private bobTween?: Phaser.Tweens.Tween;
   private cleanups: Array<() => void> = [];
+
+  private npcSprites: { placement: NpcPlacement; sprite: Phaser.GameObjects.Image }[] = [];
+  private signSprites: { vocabId: string; sprite: Phaser.GameObjects.Image }[] = [];
+  private itemSprites: { id: string; vocabId: string; sprite: Phaser.GameObjects.Image }[] = [];
+  private enemySprites = new Map<string, { enemyId: string; sprite: Phaser.GameObjects.Image }>();
+  private roxyMark?: Phaser.GameObjects.Text;
 
   constructor() {
     super('world');
@@ -37,38 +58,36 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     this.locked = false;
-    this.beast = undefined;
-    this.bobTween = undefined;
+    this.facing = 'down';
+    this.npcSprites = [];
+    this.signSprites = [];
+    this.itemSprites = [];
+    this.enemySprites = new Map();
+
     this.buildMap();
 
-    // player
-    this.player = this.physics.add.sprite(SPAWN.x, SPAWN.y, 'rudeus');
-    (this.player.body as Phaser.Physics.Arcade.Body).setSize(16, 12).setOffset(8, 22);
+    this.player = this.physics.add.sprite(SPAWN.x, SPAWN.y, 'rudeus_down_0');
+    (this.player.body as Phaser.Physics.Arcade.Body).setSize(14, 10).setOffset(9, 27);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(SPAWN.y);
     this.physics.add.collider(this.player, this.obstacles);
 
-    // Roxy
-    this.roxy = this.physics.add.staticImage(ROXY_POS.x, ROXY_POS.y, 'roxy').setDepth(ROXY_POS.y);
-    this.add
-      .text(ROXY_POS.x, ROXY_POS.y - 32, '！', { fontSize: '16px', color: '#ffd56b' })
-      .setOrigin(0.5)
-      .setDepth(100000);
+    this.placeNpcs();
+    this.placeSigns();
+    this.placeItems();
+    this.refreshEnemies();
 
-    // camera + world bounds
     this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(2);
 
-    // input
     const kb = this.input.keyboard!;
     this.cursors = kb.createCursorKeys();
     this.wasd = kb.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
     kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => this.tryInteract());
     kb.addKey(Phaser.Input.Keyboard.KeyCodes.E).on('down', () => this.tryInteract());
 
-    // interaction prompt
     this.prompt = this.add
       .text(0, 0, '', {
         fontFamily: 'Noto Sans JP, sans-serif',
@@ -81,42 +100,37 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(100000)
       .setVisible(false);
 
-    // bus subscriptions
     this.cleanups.push(
       bus.on('dialogue:end', ({ tag }) => {
         this.locked = false;
         if (tag === 'roxy-intro') {
           useGame.getState().setFlag('roxyIntroDone');
-          this.spawnBeast();
-          bus.emit('toast', {
-            text: 'A Mana Beast appears! Walk to it and press Space.',
-            tone: 'bad',
-          });
+          this.refreshEnemies();
+          if (this.roxyMark) this.roxyMark.setVisible(false);
+          bus.emit('toast', { text: 'A Mana Beast appeared nearby! And the forest holds more…', tone: 'bad' });
         }
       }),
-      bus.on('battle:start', () => {
-        this.locked = true;
-      }),
-      bus.on('battle:end', ({ won }) => {
+      bus.on('battle:end', ({ won, instanceId }) => {
         this.locked = false;
-        if (won) {
-          this.beast?.destroy();
-          this.beast = undefined;
-          useGame.getState().setFlag('beast1Defeated');
-        } else {
+        if (won && instanceId) {
+          useGame.getState().setFlag(`enemy_${instanceId}`);
+          const e = this.enemySprites.get(instanceId);
+          e?.sprite.destroy();
+          this.enemySprites.delete(instanceId);
+        } else if (!won) {
           this.player.setPosition(SPAWN.x, SPAWN.y);
         }
       }),
     );
 
-    // restore world objects when resuming a save
-    const st = useGame.getState();
-    if (st.flags.roxyIntroDone && !st.flags.beast1Defeated) this.spawnBeast();
-
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.cleanups.forEach((c) => c());
       this.cleanups = [];
     });
+
+    if (import.meta.env.DEV) {
+      (window as unknown as { __world?: WorldScene }).__world = this;
+    }
   }
 
   private buildMap() {
@@ -135,43 +149,119 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private spawnBeast() {
-    if (this.beast) return;
-    this.beast = this.physics.add.staticImage(BEAST_POS.x, BEAST_POS.y, 'beast').setDepth(BEAST_POS.y);
-    this.tweens.add({ targets: this.beast, y: BEAST_POS.y - 4, yoyo: true, repeat: -1, duration: 700 });
+  private placeNpcs() {
+    for (const placement of NPCS) {
+      const pos = { x: placement.tx * TILE + TILE / 2, y: placement.ty * TILE + TILE / 2 };
+      const sprite = this.add.image(pos.x, pos.y, placement.sprite).setDepth(pos.y);
+      this.npcSprites.push({ placement, sprite });
+      if (placement.kind === 'lesson') {
+        this.roxyMark = this.add
+          .text(pos.x, pos.y - 30, '！', { fontSize: '16px', color: '#ffd56b' })
+          .setOrigin(0.5)
+          .setDepth(100000)
+          .setVisible(!useGame.getState().flags.roxyIntroDone);
+      } else {
+        const mark = this.add
+          .text(pos.x, pos.y - 30, '💬', { fontSize: '14px' })
+          .setOrigin(0.5)
+          .setDepth(100000);
+        this.tweens.add({ targets: mark, y: pos.y - 34, yoyo: true, repeat: -1, duration: 700 });
+      }
+    }
   }
 
-  private nearestInteractable(): 'roxy' | 'beast' | null {
-    const { x, y } = this.player;
-    const st = useGame.getState();
-    if (this.beast && Phaser.Math.Distance.Between(x, y, this.beast.x, this.beast.y) < INTERACT_DIST)
-      return 'beast';
-    if (
-      !st.flags.roxyIntroDone &&
-      Phaser.Math.Distance.Between(x, y, this.roxy.x, this.roxy.y) < INTERACT_DIST
-    )
-      return 'roxy';
-    return null;
+  private placeSigns() {
+    for (const s of SIGNS) {
+      const x = s.tx * TILE + TILE / 2;
+      const y = s.ty * TILE + TILE / 2;
+      const sprite = this.add.image(x, y, 'sign').setDepth(y);
+      this.signSprites.push({ vocabId: s.vocabId, sprite });
+    }
+  }
+
+  private placeItems() {
+    const flags = useGame.getState().flags;
+    for (const it of ITEMS) {
+      if (flags[`item_${it.id}`]) continue;
+      const x = it.tx * TILE + TILE / 2;
+      const y = it.ty * TILE + TILE / 2;
+      const sprite = this.add.image(x, y, 'item').setDepth(y);
+      this.tweens.add({ targets: sprite, y: y - 4, yoyo: true, repeat: -1, duration: 800 });
+      this.itemSprites.push({ id: it.id, vocabId: it.vocabId, sprite });
+    }
+  }
+
+  private refreshEnemies() {
+    const flags = useGame.getState().flags;
+    const spawn = (p: EnemyPlacement) => {
+      if (this.enemySprites.has(p.id)) return;
+      if (flags[`enemy_${p.id}`]) return;
+      if (p.requiresFlag && !flags[p.requiresFlag]) return;
+      const x = p.tx * TILE + TILE / 2;
+      const y = p.ty * TILE + TILE / 2;
+      const sprite = this.add.image(x, y, 'beast').setDepth(y);
+      this.tweens.add({ targets: sprite, y: y - 4, yoyo: true, repeat: -1, duration: 700 });
+      this.enemySprites.set(p.id, { enemyId: p.enemyId, sprite });
+    };
+    ENEMIES.forEach(spawn);
+  }
+
+  private lock() {
+    this.locked = true;
+    (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+  }
+
+  private nearest(): Interactable | null {
+    const px = this.player.x;
+    const py = this.player.y;
+    let best: Interactable | null = null;
+    let bestD = INTERACT_DIST;
+    const consider = (x: number, y: number, label: string, act: () => void) => {
+      const d = Phaser.Math.Distance.Between(px, py, x, y);
+      if (d < bestD) {
+        bestD = d;
+        best = { x, y, label, act };
+      }
+    };
+
+    for (const { placement, sprite } of this.npcSprites) {
+      consider(sprite.x, sprite.y, '💬 Space', () => {
+        this.lock();
+        if (placement.kind === 'lesson') {
+          const done = useGame.getState().flags.roxyIntroDone;
+          bus.emit('dialogue:start', {
+            lines: done ? roxyAgainLines : roxyIntro,
+            tag: done ? 'roxy-again' : 'roxy-intro',
+          });
+        } else {
+          bus.emit('dialogue:start', { lines: sylphieLines, tag: 'sylphie' });
+        }
+      });
+    }
+    for (const { vocabId, sprite } of this.signSprites) {
+      consider(sprite.x, sprite.y, '📖 Space: Read', () => {
+        this.lock();
+        bus.emit('word:show', { vocabId });
+      });
+    }
+    for (const [id, { enemyId, sprite }] of this.enemySprites) {
+      consider(sprite.x, sprite.y, '⚔ Space: Fight', () => {
+        bus.emit('battle:start', { enemyId, instanceId: id });
+      });
+    }
+    return best;
   }
 
   private tryInteract() {
     if (this.locked || !useGame.getState().started) return;
-    const target = this.nearestInteractable();
-    if (target === 'roxy') {
-      this.locked = true;
-      bus.emit('dialogue:start', { lines: roxyIntro, tag: 'roxy-intro' });
-    } else if (target === 'beast') {
-      bus.emit('battle:start', { enemyId: 'manabeast' });
-    }
+    this.nearest()?.act();
   }
 
   update() {
-    const started = useGame.getState().started;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-
-    if (this.locked || !started) {
+    if (this.locked || !useGame.getState().started) {
       body.setVelocity(0, 0);
-      this.stopBob();
+      this.player.anims.stop();
       this.prompt.setVisible(false);
       return;
     }
@@ -182,45 +272,56 @@ export class WorldScene extends Phaser.Scene {
     if (this.cursors.right.isDown || this.wasd.D.isDown) vx += 1;
     if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1;
     if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1;
-
     const len = Math.hypot(vx, vy) || 1;
     body.setVelocity((vx / len) * SPEED, (vy / len) * SPEED);
     this.player.setDepth(this.player.y);
 
     const moving = vx !== 0 || vy !== 0;
-    if (vx < 0) this.player.setFlipX(true);
-    else if (vx > 0) this.player.setFlipX(false);
-    if (moving) this.startBob();
-    else this.stopBob();
+    if (moving) {
+      if (Math.abs(vx) >= Math.abs(vy)) {
+        this.facing = 'side';
+        this.player.setFlipX(vx < 0);
+      } else {
+        this.facing = vy < 0 ? 'up' : 'down';
+        this.player.setFlipX(false);
+      }
+      const key = `rudeus-${this.facing}`;
+      if (this.player.anims.currentAnim?.key !== key || !this.player.anims.isPlaying) {
+        this.player.anims.play(key, true);
+      }
+    } else {
+      this.player.anims.stop();
+      this.player.setTexture(`rudeus_${this.facing}_0`);
+    }
 
-    const target = this.nearestInteractable();
+    this.checkPickups();
+
+    const target = this.nearest();
     if (target) {
-      const obj = target === 'beast' ? this.beast! : this.roxy;
-      this.prompt
-        .setText(target === 'beast' ? '⚔ Space: Fight' : '💬 Space: Talk')
-        .setPosition(obj.x, obj.y - 24)
-        .setVisible(true);
+      this.prompt.setText(target.label).setPosition(target.x, target.y - 26).setVisible(true);
     } else {
       this.prompt.setVisible(false);
     }
   }
 
-  private startBob() {
-    if (this.bobTween) return;
-    this.bobTween = this.tweens.add({
-      targets: this.player,
-      scaleY: 0.9,
-      yoyo: true,
-      repeat: -1,
-      duration: 150,
-    });
-  }
-
-  private stopBob() {
-    if (this.bobTween) {
-      this.bobTween.stop();
-      this.bobTween = undefined;
-      this.player.setScale(1);
+  private checkPickups() {
+    const px = this.player.x;
+    const py = this.player.y;
+    for (let i = this.itemSprites.length - 1; i >= 0; i--) {
+      const item = this.itemSprites[i];
+      if (Phaser.Math.Distance.Between(px, py, item.sprite.x, item.sprite.y) < PICKUP_DIST) {
+        const game = useGame.getState();
+        const v = getVocab(item.vocabId);
+        const isNew = game.capture(item.vocabId);
+        game.setFlag(`item_${item.id}`);
+        audio.sfx('capture');
+        bus.emit('toast', {
+          text: isNew ? `Found ${v?.jp}（${v?.reading}）— learned!` : `Found ${v?.jp} (already known)`,
+          tone: 'good',
+        });
+        item.sprite.destroy();
+        this.itemSprites.splice(i, 1);
+      }
     }
   }
 }

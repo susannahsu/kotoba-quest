@@ -7,9 +7,10 @@ import { getVocab } from '@/content/vocab/n5-starter';
 import { checkAnswer, damageFor, makeChallenge } from '@/systems/combat/challenges';
 import { MANA_BOLT, MP_COST, SPELLS } from '@/systems/combat/spells';
 import { speak } from '@/systems/japanese/tts';
+import { audio } from '@/systems/audio/audio';
 import { Bar } from './Bar';
 
-const DURATION = 9000;
+const DEFAULT_DURATION = 9000;
 const FAST_WINDOW = 4000;
 
 type Phase = 'prompt' | 'result' | 'win' | 'lose';
@@ -47,11 +48,12 @@ export function BattleScreen({
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [result, setResult] = useState<ResultInfo | null>(null);
   const [phase, setPhase] = useState<Phase>('prompt');
-  const [timeLeft, setTimeLeft] = useState(DURATION);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_DURATION);
   const [typed, setTyped] = useState('');
 
   const enemyHpRef = useRef(enemy.maxHp);
-  const timeLeftRef = useRef(DURATION);
+  const timeLeftRef = useRef(DEFAULT_DURATION);
+  const durRef = useRef(DEFAULT_DURATION);
   const timerRef = useRef<number | null>(null);
   const answeredRef = useRef(false);
   const resolveRef = useRef<(raw: string) => void>(() => {});
@@ -64,10 +66,10 @@ export function BattleScreen({
     }
   };
 
-  const startTimer = () => {
+  const startTimer = (ms: number) => {
     clearTimer();
-    timeLeftRef.current = DURATION;
-    setTimeLeft(DURATION);
+    timeLeftRef.current = ms;
+    setTimeLeft(ms);
     timerRef.current = window.setInterval(() => {
       timeLeftRef.current -= 100;
       setTimeLeft(timeLeftRef.current);
@@ -80,12 +82,15 @@ export function BattleScreen({
 
   const nextChallenge = () => {
     const id = deck[Math.floor(Math.random() * deck.length)];
+    const g = useGame.getState();
+    const ch = makeChallenge(id, { mastery: g.masteryOf(id), seen: g.mastery[id]?.seen ?? 0 });
     answeredRef.current = false;
-    setChallenge(makeChallenge(id));
+    durRef.current = ch.timeMs;
+    setChallenge(ch);
     setTyped('');
     setResult(null);
     setPhase('prompt');
-    startTimer();
+    startTimer(ch.timeMs);
   };
 
   useEffect(() => {
@@ -104,7 +109,7 @@ export function BattleScreen({
     answeredRef.current = true;
     clearTimer();
 
-    const fast = timeLeftRef.current > DURATION - FAST_WINDOW;
+    const fast = timeLeftRef.current > durRef.current - FAST_WINDOW;
     const correct = checkAnswer(challenge, raw);
     const g = useGame.getState();
     g.answer(challenge.vocabId, correct, fast);
@@ -127,15 +132,20 @@ export function BattleScreen({
         fast,
       });
       speak(v.chant ?? v.reading, g.settings.audio);
+      audio.sfx('cast');
       setPhase('result');
       if (newHp <= 0) {
         g.gainXp(enemy.xp);
-        window.setTimeout(() => setPhase('win'), 1100);
+        window.setTimeout(() => {
+          audio.sfx('victory');
+          setPhase('win');
+        }, 1100);
       } else {
         window.setTimeout(nextChallenge, 1200);
       }
     } else {
       g.damage(enemy.power);
+      audio.sfx('wrong');
       setResult({ correct: false, taken: enemy.power, answer: challenge.answer });
       setPhase('result');
       const lethal = useGame.getState().hp <= 0;
@@ -146,7 +156,7 @@ export function BattleScreen({
 
   const v = challenge ? getVocab(challenge.vocabId) : undefined;
   const showFuriganaOnPrompt = challenge?.kind === 'meaning';
-  const timerPct = Math.max(0, (timeLeft / DURATION) * 100);
+  const timerPct = Math.max(0, (timeLeft / durRef.current) * 100);
   const kanaPreview = typed ? toKana(typed) : '';
 
   return (
@@ -206,7 +216,12 @@ export function BattleScreen({
                 style={{ width: `${timerPct}%` }}
               />
             </div>
-            <div className="text-xs uppercase tracking-wide opacity-60">{challenge.promptLabel}</div>
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide opacity-60">
+              {challenge.isNew && (
+                <span className="rounded bg-leaf/30 px-1.5 py-0.5 text-leaf">✨ new</span>
+              )}
+              {challenge.promptLabel}
+            </div>
             <div className="my-3 font-jp text-6xl font-bold">
               {showFuriganaOnPrompt ? (
                 <ruby>

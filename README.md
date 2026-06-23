@@ -77,9 +77,12 @@ tests/         Vitest unit tests
 
 ## 🗺️ Roadmap
 
-- **M1 (done):** vertical slice — walkable village, Roxy's lesson, capture, one battle.
-- **M2:** SRS "Daily Training" review mode, quest log, more NPCs, map transitions.
-- **M3:** more chapters & maps, JLPT vocab decks + dictionary subset, grammar notes.
+- **M1 (done):** walkable village, Roxy's lesson, capture, language-powered combat.
+- **M2 (done):** procedural soundtrack + SFX; canon-styled characters with directional walk
+  animations; ~36-word themed vocab deck; bigger village + forest with readable signs, item
+  pickups, and a second NPC (Sylphiette); graded recognition→recall learning; SRS "Daily
+  Training" review; quest log with tracked objectives.
+- **M3:** more chapters & maps, map transitions, JLPT decks + jmdict subset, grammar notes.
 - **M4:** CC0 art/audio pass, mobile/touch controls, accessibility, polish & release.
 
 ## ⚖️ Legal & credits

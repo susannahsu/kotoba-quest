@@ -84,6 +84,28 @@ export function reviewMastery(m: MasteryRecord, correct: boolean, fast = false):
   };
 }
 
+export type Grade = 'again' | 'hard' | 'good' | 'easy';
+
+const GRADE_RATING: Record<Grade, Rating> = {
+  again: Rating.Again,
+  hard: Rating.Hard,
+  good: Rating.Good,
+  easy: Rating.Easy,
+};
+
+/** Grade an explicit flashcard review (Daily Training). */
+export function gradeMastery(m: MasteryRecord, grade: Grade): MasteryRecord {
+  const log = scheduler.repeat(deserialize(m.card), new Date()) as unknown as Record<
+    number,
+    { card: Card }
+  >;
+  return {
+    card: serialize(log[GRADE_RATING[grade]].card),
+    seen: m.seen + 1,
+    correct: m.correct + (grade === 'again' ? 0 : 1),
+  };
+}
+
 export function masteryScore(m: MasteryRecord | undefined): number {
   if (!m) return 0;
   return masteryFromCard(m.card);

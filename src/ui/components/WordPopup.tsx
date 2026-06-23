@@ -2,17 +2,19 @@ import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
 import { lookup } from '@/systems/japanese/dictionary';
 import { speak } from '@/systems/japanese/tts';
+import { audio } from '@/systems/audio/audio';
 
 export function WordPopup({ vocabId, onClose }: { vocabId: string; onClose: () => void }) {
   const v = lookup(vocabId);
   const captured = useGame((s) => s.grimoire.includes(vocabId));
   const capture = useGame((s) => s.capture);
-  const audio = useGame((s) => s.settings.audio);
+  const voiceOn = useGame((s) => s.settings.audio);
 
   if (!v) return null;
 
   const onCapture = () => {
     if (capture(vocabId)) {
+      audio.sfx('capture');
       bus.emit('toast', { text: `Learned ${v.jp}（${v.reading}）!`, tone: 'good' });
     }
   };
@@ -44,7 +46,7 @@ export function WordPopup({ vocabId, onClose }: { vocabId: string; onClose: () =
 
         <div className="mt-4 flex gap-2">
           <button
-            onClick={() => speak(v.reading, audio)}
+            onClick={() => speak(v.reading, voiceOn)}
             className="flex-1 rounded-lg bg-white/10 py-2 text-sm hover:bg-white/20"
           >
             🔊 Listen

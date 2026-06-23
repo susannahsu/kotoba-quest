@@ -1,14 +1,22 @@
 import { useGame } from '@/state/store';
+import { isDue } from '@/systems/srs/srs';
 import { Bar } from './Bar';
 
-export function HUD({ onOpenMenu }: { onOpenMenu: (m: 'grimoire' | 'settings') => void }) {
+export function HUD({
+  onOpenMenu,
+}: {
+  onOpenMenu: (m: 'grimoire' | 'settings' | 'training' | 'quests') => void;
+}) {
   const name = useGame((s) => s.playerName);
   const level = useGame((s) => s.level);
   const hp = useGame((s) => s.hp);
   const maxHp = useGame((s) => s.maxHp);
   const mp = useGame((s) => s.mp);
   const maxMp = useGame((s) => s.maxMp);
-  const words = useGame((s) => s.grimoire.length);
+  const grimoire = useGame((s) => s.grimoire);
+  const mastery = useGame((s) => s.mastery);
+  const words = grimoire.length;
+  const due = grimoire.filter((id) => mastery[id] && isDue(mastery[id].card)).length;
 
   return (
     <>
@@ -29,6 +37,20 @@ export function HUD({ onOpenMenu }: { onOpenMenu: (m: 'grimoire' | 'settings') =
 
       {/* Buttons, top-right */}
       <div className="ui-interactive absolute right-3 top-3 flex gap-2">
+        <button
+          onClick={() => onOpenMenu('training')}
+          className="rounded-lg bg-ink/80 px-3 py-2 text-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30"
+          title="Daily Training (review your words)"
+        >
+          🧠{due > 0 && <span className="ml-1 tabular-nums text-mana">{due}</span>}
+        </button>
+        <button
+          onClick={() => onOpenMenu('quests')}
+          className="rounded-lg bg-ink/80 px-3 py-2 text-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30"
+          title="Quests"
+        >
+          📜
+        </button>
         <button
           onClick={() => onOpenMenu('grimoire')}
           className="rounded-lg bg-ink/80 px-3 py-2 text-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30"
