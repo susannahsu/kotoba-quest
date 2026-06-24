@@ -5,7 +5,7 @@ import { Bar } from './Bar';
 export function HUD({
   onOpenMenu,
 }: {
-  onOpenMenu: (m: 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar') => void;
+  onOpenMenu: (m: 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'worldmap') => void;
 }) {
   const name = useGame((s) => s.playerName);
   const level = useGame((s) => s.level);
@@ -37,6 +37,13 @@ export function HUD({
 
       {/* Buttons, top-right */}
       <div className="ui-interactive absolute right-3 top-3 flex gap-2">
+        <button
+          onClick={() => onOpenMenu('worldmap')}
+          className="rounded-lg bg-ink/80 px-3 py-2 text-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30"
+          title="World map"
+        >
+          🗺️
+        </button>
         <button
           onClick={() => onOpenMenu('training')}
           className="rounded-lg bg-ink/80 px-3 py-2 text-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30"

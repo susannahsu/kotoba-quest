@@ -11,6 +11,8 @@ export type GameEvents = {
   'battle:end': { won: boolean; enemyId: string; instanceId?: string };
   'toast': { text: string; tone?: 'info' | 'good' | 'bad' };
   'grammar:open': undefined;
+  'world:pos': { map: string; x: number; y: number };
+  'map:enter': { map: string };
   'game:start': undefined;
 };
 

@@ -64,6 +64,14 @@ export const GRAMMAR: GrammarNote[] = [
     example: 'ロキシーです。',
     exampleEn: 'I am Roxy.',
   },
+  {
+    id: 'tai',
+    title: '〜たい',
+    titleEn: 'want to ~',
+    explanation: 'Attach 〜たい to a verb stem to say you want to do something.',
+    example: '強くなりたい！',
+    exampleEn: 'I want to get stronger!',
+  },
 ];
 
 export const GRAMMAR_BY_ID: Record<string, GrammarNote> = Object.fromEntries(

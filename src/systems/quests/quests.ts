@@ -28,9 +28,14 @@ export function initQuests(): () => void {
     bus.on('dialogue:end', ({ tag }) => {
       if (tag === 'roxy-intro') complete('q_learn');
       if (tag === 'sylphie') complete('q_friend');
+      if (tag === 'eris') complete('q_eris');
+      if (tag === 'ghislaine') complete('q_ghislaine');
     }),
     bus.on('battle:end', ({ won }) => {
       if (won) complete('q_beast');
+    }),
+    bus.on('map:enter', ({ map }) => {
+      if (map === 'roa') complete('q_roa_reached');
     }),
   ];
   return () => offs.forEach((o) => o());

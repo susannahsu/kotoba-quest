@@ -12,11 +12,13 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { TrainingScreen } from './components/TrainingScreen';
 import { QuestLog } from './components/QuestLog';
 import { GrammarPanel } from './components/GrammarPanel';
+import { Minimap } from './components/Minimap';
+import { WorldMap } from './components/WorldMap';
 import { TitleScreen } from './components/TitleScreen';
 import { WordPopup } from './components/WordPopup';
 import { Toasts, type ToastItem } from './components/Toasts';
 
-type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | null;
+type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'worldmap' | null;
 
 export function App() {
   const started = useGame((s) => s.started);
@@ -70,6 +72,7 @@ export function App() {
   return (
     <>
       {started && !dialogue && !battle && <HUD onOpenMenu={setMenu} />}
+      {started && !dialogue && !battle && <Minimap />}
 
       {dialogue && (
         <DialogueBox
@@ -99,6 +102,7 @@ export function App() {
       {menu === 'training' && <TrainingScreen onClose={() => setMenu(null)} />}
       {menu === 'quests' && <QuestLog onClose={() => setMenu(null)} />}
       {menu === 'grammar' && <GrammarPanel onClose={() => setMenu(null)} />}
+      {menu === 'worldmap' && <WorldMap onClose={() => setMenu(null)} />}
 
       {word && (
         <WordPopup

@@ -57,6 +57,11 @@ export const VOCAB: VocabEntry[] = [
   // --- Adjectives ---
   { id: 'ookii', jp: '大きい', reading: 'おおきい', romaji: 'ookii', en: 'big', jlpt: 'N5', pos: 'adjective', tags: ['adj'] },
   { id: 'chiisai', jp: '小さい', reading: 'ちいさい', romaji: 'chiisai', en: 'small', jlpt: 'N5', pos: 'adjective', tags: ['adj'] },
+
+  // --- Roa / combat ---
+  { id: 'ken', jp: '剣', reading: 'けん', romaji: 'ken', en: 'sword', jlpt: 'N3', pos: 'noun', tags: ['combat'] },
+  { id: 'tsuyoi', jp: '強い', reading: 'つよい', romaji: 'tsuyoi', en: 'strong', jlpt: 'N4', pos: 'adjective', tags: ['combat', 'adj'] },
+  { id: 'tatakau', jp: '戦う', reading: 'たたかう', romaji: 'tatakau', en: 'to fight', jlpt: 'N4', pos: 'verb', tags: ['combat', 'verb'] },
 ];
 
 // Extra dictionary entries: particles + common words that appear in dialogue.

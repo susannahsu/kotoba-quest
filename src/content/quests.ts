@@ -26,4 +26,16 @@ export const QUESTS: Quest[] = [
     ],
     xp: 30,
   },
+  {
+    id: 'to-roa',
+    title: 'The Sword City',
+    titleJp: '剣の街',
+    desc: 'Follow the forest path east to the town of Roa and meet the Boreas swordfolk.',
+    objectives: [
+      { id: 'reach', text: 'Reach the town of Roa', flag: 'q_roa_reached' },
+      { id: 'eris', text: 'Meet Eris', flag: 'q_eris' },
+      { id: 'ghislaine', text: 'Meet Ghislaine the swordmaster', flag: 'q_ghislaine' },
+    ],
+    xp: 40,
+  },
 ];

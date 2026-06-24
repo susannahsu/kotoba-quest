@@ -44,6 +44,28 @@ export const TILE_TEXTURE: Record<number, string> = {
   [T.DOOR_OUT]: 'door_out',
 };
 
+// Colors for the minimap (one per tile code).
+export const MINIMAP_COLOR: Record<number, string> = {
+  [T.GRASS]: '#3f7d4f',
+  [T.PATH]: '#b9a06b',
+  [T.DIRT]: '#7c6242',
+  [T.WATER]: '#3a6ea5',
+  [T.TREE]: '#244a30',
+  [T.FLOWER]: '#4f8f5f',
+  [T.BUSH]: '#2f6b3f',
+  [T.ROCK]: '#8a8f99',
+  [T.FENCE]: '#8a6a45',
+  [T.HOUSE_WALL]: '#cdbd99',
+  [T.HOUSE_ROOF]: '#a14b3c',
+  [T.DOOR]: '#ffd56b',
+  [T.FLOOR]: '#9a7850',
+  [T.WALL]: '#5d5068',
+  [T.RUG]: '#8a3b4f',
+  [T.TABLE]: '#6f4a2c',
+  [T.SHELF]: '#4a3120',
+  [T.DOOR_OUT]: '#ffd56b',
+};
+
 // Doors are walkable (you step onto them to transition).
 export const COLLIDE: Set<number> = new Set([
   T.WATER,

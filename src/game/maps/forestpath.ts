@@ -34,5 +34,8 @@ export const forestpath: MapDef = {
   signs: [{ tx: 8, ty: 6, vocabId: 'machi' }],
   items: [],
   enemies: [{ id: 'fp_great', enemyId: 'greatbeast', tx: 12, ty: 8 }],
-  transitions: [{ tx: 1, ty: 8, toMap: 'village', toTx: 37, toTy: 14, label: '← Back to village' }],
+  transitions: [
+    { tx: 1, ty: 8, toMap: 'village', toTx: 37, toTy: 14, label: '← Back to village' },
+    { tx: 14, ty: 8, toMap: 'roa', toTx: 2, toTy: 8, label: '→ Roa' },
+  ],
 };

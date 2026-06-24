@@ -37,6 +37,7 @@ export class WorldScene extends Phaser.Scene {
   private facing: Facing = 'down';
   private locked = false;
   private arrivedAt = 0;
+  private lastPosEmit = 0;
   private cleanups: Array<() => void> = [];
 
   private npcSprites: { placement: NpcPlacement; sprite: Phaser.GameObjects.Image }[] = [];
@@ -129,6 +130,9 @@ export class WorldScene extends Phaser.Scene {
         }
       }),
     );
+
+    bus.emit('map:enter', { map: mapId });
+    bus.emit('world:pos', { map: mapId, x: spawn.x, y: spawn.y });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.cleanups.forEach((c) => c());
@@ -312,6 +316,11 @@ export class WorldScene extends Phaser.Scene {
     const len = Math.hypot(vx, vy) || 1;
     body.setVelocity((vx / len) * SPEED, (vy / len) * SPEED);
     this.player.setDepth(this.player.y);
+
+    if (this.time.now - this.lastPosEmit > 120) {
+      this.lastPosEmit = this.time.now;
+      bus.emit('world:pos', { map: this.map.id, x: this.player.x, y: this.player.y });
+    }
 
     const moving = vx !== 0 || vy !== 0;
     if (moving) {

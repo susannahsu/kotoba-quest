@@ -85,7 +85,9 @@ tests/         Vitest unit tests
 - **M3 (done):** multi-map system with door/edge transitions (village ⇄ house interior ⇄
   forest path); tap-to-learn dictionary so common words & particles are lookupable;
   grammar notebook that unlocks notes as you meet them; Sylphiette & Zenith NPCs.
-- **M4:** Roa town & deeper story, jmdict-scale dictionary import, recorded audio,
+- **M3.5 (done):** minimap + world-map screen; Roa town with Eris & Ghislaine, the
+  "Sword City" quest, and new vocab/grammar.
+- **M4:** deeper Roa story, jmdict-scale dictionary import, recorded audio,
   mobile/touch controls, accessibility, polish & release.
 
 ## ⚖️ Legal & credits

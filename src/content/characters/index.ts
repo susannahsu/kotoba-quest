@@ -31,6 +31,20 @@ export const CHARACTERS: Record<string, Character> = {
     color: '#cf7d96',
     textureKey: 'zenith',
   },
+  eris: {
+    id: 'eris',
+    name: 'Eris',
+    nameJp: 'エリス',
+    color: '#e0563b',
+    textureKey: 'eris',
+  },
+  ghislaine: {
+    id: 'ghislaine',
+    name: 'Ghislaine',
+    nameJp: 'ギレーヌ',
+    color: '#c9a14a',
+    textureKey: 'ghislaine',
+  },
   narrator: {
     id: 'narrator',
     name: 'Narrator',

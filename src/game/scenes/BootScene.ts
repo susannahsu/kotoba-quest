@@ -19,6 +19,7 @@ interface ChibiOptions {
   hat?: number;
   braids?: number;
   staff?: boolean;
+  sword?: boolean;
   mole?: boolean;
 }
 
@@ -34,6 +35,8 @@ export class BootScene extends Phaser.Scene {
     this.makeNpc('roxy', { skin: 0xf3d3ad, hair: 0x7e9be8, outfit: 0xeaeefb, eye: 0x6f86d6, hat: 0x2b2b3a, braids: 0x7e9be8, staff: true });
     this.makeNpc('sylphie', { skin: 0xf0cda2, hair: 0xbfe3c0, outfit: 0x8fc795, eye: 0x6fae72 });
     this.makeNpc('zenith', { skin: 0xf3d6b0, hair: 0xe2c879, outfit: 0xcf7d96, eye: 0x6f86d6 });
+    this.makeNpc('eris', { skin: 0xf0cda2, hair: 0xd64b32, outfit: 0xe8c86b, eye: 0x5fae72 });
+    this.makeNpc('ghislaine', { skin: 0x6e4a34, hair: 0xe8e2d0, outfit: 0x6f5436, eye: 0xe8c06b, sword: true });
     this.makeBeast();
     this.registerAnims();
     this.scene.start('world');
@@ -228,6 +231,13 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(0x6b4a32, 1).fillRect(25, 12, 2, 22);
       g.fillStyle(0x5b8cff, 1).fillCircle(26, 11, 3);
       g.fillStyle(0xbcd3ff, 1).fillCircle(25, 10, 1.2);
+    }
+
+    // sword
+    if (o.sword) {
+      g.fillStyle(0x9aa0ad, 1).fillRect(25, 6, 2, 20);
+      g.fillStyle(0xd7dbe2, 1).fillRect(25, 6, 1, 20);
+      g.fillStyle(0x6b4a32, 1).fillRect(23, 24, 6, 3);
     }
   }
 
