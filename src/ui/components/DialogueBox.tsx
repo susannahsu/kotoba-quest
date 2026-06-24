@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { DialogueLine } from '@/content/types';
 import { useGame } from '@/state/store';
 import { getCharacter } from '@/content/characters';
+import { getGrammar } from '@/content/grammar';
 import { FuriganaText } from '@/systems/japanese/furigana';
 import { speak } from '@/systems/japanese/tts';
 import { WordPopup } from './WordPopup';
@@ -17,12 +18,15 @@ export function DialogueBox({ lines, onDone }: { lines: DialogueLine[]; onDone: 
   const romaji = useGame((s) => s.settings.romaji);
   const audio = useGame((s) => s.settings.audio);
   const captured = useGame((s) => s.grimoire);
+  const unlockGrammar = useGame((s) => s.unlockGrammar);
 
   const line = lines[idx];
   const speaker = getCharacter(line.speaker);
+  const note = line.grammarNote ? getGrammar(line.grammarNote) : undefined;
 
   useEffect(() => {
     speak(lineToJp(line), audio);
+    if (line.grammarNote) unlockGrammar(line.grammarNote);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);
 
@@ -75,11 +79,16 @@ export function DialogueBox({ lines, onDone }: { lines: DialogueLine[]; onDone: 
             <div className="mt-2 text-sm italic opacity-60">{line.romaji}</div>
           )}
           <div className="mt-2 text-base opacity-90">{line.en}</div>
-          {line.grammar && (
+          {note ? (
+            <div className="mt-3 rounded-lg bg-mana/10 px-3 py-2 text-xs text-mana/90">
+              📘 <span className="font-bold">{note.title}</span>{' '}
+              <span className="opacity-70">({note.titleEn})</span> — {note.explanation}
+            </div>
+          ) : line.grammar ? (
             <div className="mt-3 rounded-lg bg-mana/10 px-3 py-2 text-xs text-mana/90">
               💡 {line.grammar}
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="mt-3 flex items-center justify-between text-xs opacity-60">

@@ -1,8 +1,8 @@
 // Renders a Japanese sentence with level-scaled furigana and tappable vocab words.
-// Furigana uses native <ruby>/<rt> (crisp DOM typography). Vocab segments become
-// buttons the player can tap to capture into the Grimoire.
+// Words are tappable in two ways: pre-tagged "learn me" targets (glowing), and any other
+// word found in the dictionary by its surface form (a subtle dotted underline).
 import type { FuriganaMode, Segment } from '@/content/types';
-import { getVocab } from '@/content/vocab/n5-starter';
+import { getVocab, lookupSurface } from '@/content/vocab/n5-starter';
 import { shouldShowFurigana } from './levels';
 
 interface FuriganaTextProps {
@@ -23,7 +23,8 @@ export function FuriganaText({
   return (
     <span className={className}>
       {segments.map((seg, i) => {
-        const vocab = seg.vocabId ? getVocab(seg.vocabId) : undefined;
+        const linkedId = seg.vocabId ?? lookupSurface(seg.text)?.id;
+        const vocab = linkedId ? getVocab(linkedId) : undefined;
         const showRuby = shouldShowFurigana(mode, seg, vocab);
         const body =
           showRuby && seg.reading ? (
@@ -35,24 +36,24 @@ export function FuriganaText({
             seg.text
           );
 
-        if (seg.vocabId) {
-          const captured = capturedIds.includes(seg.vocabId);
-          const clickable = !!onWord;
+        if (linkedId && onWord) {
+          const captured = capturedIds.includes(linkedId);
+          const highlight = !!seg.vocabId; // explicit targets glow; auto-links stay subtle
+          const cls = captured
+            ? 'text-leaf'
+            : highlight
+              ? 'text-mana word-new'
+              : 'underline decoration-dotted decoration-white/25 underline-offset-4';
           return (
             <button
               key={i}
               type="button"
-              disabled={!clickable}
               onClick={(e) => {
                 e.stopPropagation();
-                onWord?.(seg.vocabId!);
+                onWord(linkedId);
               }}
-              className={[
-                'ui-interactive rounded px-0.5 align-baseline transition-colors',
-                captured ? 'text-leaf' : 'text-mana word-new',
-                clickable ? 'cursor-pointer hover:bg-white/10' : 'cursor-default',
-              ].join(' ')}
-              title={clickable ? 'Tap to learn this word' : undefined}
+              className={`ui-interactive rounded px-0.5 align-baseline transition-colors hover:bg-white/10 ${cls}`}
+              title="Tap to look up / learn"
             >
               {body}
             </button>

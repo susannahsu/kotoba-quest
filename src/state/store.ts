@@ -31,6 +31,7 @@ interface GameData {
   grimoire: string[];
   mastery: Record<string, MasteryRecord>;
   flags: Record<string, boolean>;
+  grammar: string[];
   settings: Settings;
   started: boolean;
 }
@@ -49,6 +50,7 @@ interface GameActions {
   gainXp: (n: number) => void;
   setPos: (x: number, y: number, map?: string) => void;
   setFlag: (key: string, value?: boolean) => void;
+  unlockGrammar: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
 }
 
@@ -78,6 +80,7 @@ function freshData(): Omit<GameData, 'settings'> {
     grimoire: [],
     mastery: {},
     flags: {},
+    grammar: [],
     started: false,
   };
 }
@@ -142,6 +145,9 @@ export const useGame = create<GameStore>()(
 
       setFlag: (key, value = true) => set((s) => ({ flags: { ...s.flags, [key]: value } })),
 
+      unlockGrammar: (id) =>
+        set((s) => (s.grammar.includes(id) ? {} : { grammar: [...s.grammar, id] })),
+
       updateSettings: (patch) =>
         set((s) => {
           let next: Settings = { ...s.settings, ...patch };
@@ -169,6 +175,7 @@ export const useGame = create<GameStore>()(
         grimoire: s.grimoire,
         mastery: s.mastery,
         flags: s.flags,
+        grammar: s.grammar,
         settings: s.settings,
         started: s.started,
       }),

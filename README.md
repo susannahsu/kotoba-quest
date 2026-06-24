@@ -82,8 +82,11 @@ tests/         Vitest unit tests
   animations; ~36-word themed vocab deck; bigger village + forest with readable signs, item
   pickups, and a second NPC (Sylphiette); graded recognition→recall learning; SRS "Daily
   Training" review; quest log with tracked objectives.
-- **M3:** more chapters & maps, map transitions, JLPT decks + jmdict subset, grammar notes.
-- **M4:** CC0 art/audio pass, mobile/touch controls, accessibility, polish & release.
+- **M3 (done):** multi-map system with door/edge transitions (village ⇄ house interior ⇄
+  forest path); tap-to-learn dictionary so common words & particles are lookupable;
+  grammar notebook that unlocks notes as you meet them; Sylphiette & Zenith NPCs.
+- **M4:** Roa town & deeper story, jmdict-scale dictionary import, recorded audio,
+  mobile/touch controls, accessibility, polish & release.
 
 ## ⚖️ Legal & credits
 

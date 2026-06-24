@@ -1,34 +1,25 @@
-// The walkable overworld: tilemap + collision, animated player movement, camera,
-// and interactables — NPCs (talk), signs (read a word), item pickups (auto-capture),
-// and enemies (battle). Talks to the React UI via `bus`.
+// The walkable overworld. Loads any map from the registry, renders tiles + collision,
+// animates the player, and handles interactables (NPCs, signs, items, enemies) and
+// door/edge transitions between maps. Talks to the React UI via `bus`.
 import Phaser from 'phaser';
 import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
 import { audio } from '@/systems/audio/audio';
-import { roxyIntro } from '@/content/dialogue/roxy-intro';
-import { roxyAgainLines, sylphieLines } from '@/content/dialogue/extra';
 import { getVocab } from '@/content/vocab/n5-starter';
-import {
-  COLLIDE,
-  ENEMIES,
-  ITEMS,
-  MAP_H,
-  MAP_W,
-  NPCS,
-  SIGNS,
-  SPAWN,
-  TILE,
-  TILE_TEXTURE,
-  buildVillage,
-  type EnemyPlacement,
-  type NpcPlacement,
-} from '../maps/village';
+import { COLLIDE, TILE, TILE_TEXTURE } from '../maps/tiles';
+import { getMap } from '../maps';
+import type { MapDef, NpcPlacement, SignPlacement, TransitionPlacement } from '../maps/types';
 
 const SPEED = 156;
 const INTERACT_DIST = 56;
 const PICKUP_DIST = 26;
+const ARRIVAL_GRACE = 450;
 
 type Facing = 'down' | 'up' | 'side';
+interface SceneData {
+  mapId?: string;
+  spawn?: { x: number; y: number };
+}
 interface Interactable {
   x: number;
   y: number;
@@ -37,6 +28,7 @@ interface Interactable {
 }
 
 export class WorldScene extends Phaser.Scene {
+  private map!: MapDef;
   private player!: Phaser.Physics.Arcade.Sprite;
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -44,32 +36,42 @@ export class WorldScene extends Phaser.Scene {
   private prompt!: Phaser.GameObjects.Text;
   private facing: Facing = 'down';
   private locked = false;
+  private arrivedAt = 0;
   private cleanups: Array<() => void> = [];
 
   private npcSprites: { placement: NpcPlacement; sprite: Phaser.GameObjects.Image }[] = [];
-  private signSprites: { vocabId: string; sprite: Phaser.GameObjects.Image }[] = [];
+  private signSprites: { placement: SignPlacement; sprite: Phaser.GameObjects.Image }[] = [];
   private itemSprites: { id: string; vocabId: string; sprite: Phaser.GameObjects.Image }[] = [];
   private enemySprites = new Map<string, { enemyId: string; sprite: Phaser.GameObjects.Image }>();
-  private roxyMark?: Phaser.GameObjects.Text;
 
   constructor() {
     super('world');
   }
 
-  create() {
+  create(data: SceneData) {
     this.locked = false;
     this.facing = 'down';
+    this.arrivedAt = this.time.now;
     this.npcSprites = [];
     this.signSprites = [];
     this.itemSprites = [];
+    this.markers = [];
     this.enemySprites = new Map();
 
-    this.buildMap();
+    const mapId = data.mapId ?? useGame.getState().pos.map ?? 'village';
+    this.map = getMap(mapId);
+    const spawn = data.spawn ?? {
+      x: this.map.spawn.tx * TILE + TILE / 2,
+      y: this.map.spawn.ty * TILE + TILE / 2,
+    };
+    useGame.getState().setPos(spawn.x, spawn.y, mapId);
 
-    this.player = this.physics.add.sprite(SPAWN.x, SPAWN.y, 'rudeus_down_0');
+    this.buildTiles();
+
+    this.player = this.physics.add.sprite(spawn.x, spawn.y, 'rudeus_down_0');
     (this.player.body as Phaser.Physics.Arcade.Body).setSize(14, 10).setOffset(9, 27);
     this.player.setCollideWorldBounds(true);
-    this.player.setDepth(SPAWN.y);
+    this.player.setDepth(spawn.y);
     this.physics.add.collider(this.player, this.obstacles);
 
     this.placeNpcs();
@@ -77,10 +79,13 @@ export class WorldScene extends Phaser.Scene {
     this.placeItems();
     this.refreshEnemies();
 
-    this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
-    this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
-    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    const wpx = this.map.width * TILE;
+    const hpx = this.map.height * TILE;
+    this.physics.world.setBounds(0, 0, wpx, hpx);
+    this.cameras.main.setBounds(0, 0, wpx, hpx);
+    this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
     this.cameras.main.setZoom(2);
+    this.cameras.main.fadeIn(200, 12, 10, 18);
 
     const kb = this.input.keyboard!;
     this.cursors = kb.createCursorKeys();
@@ -106,19 +111,21 @@ export class WorldScene extends Phaser.Scene {
         if (tag === 'roxy-intro') {
           useGame.getState().setFlag('roxyIntroDone');
           this.refreshEnemies();
-          if (this.roxyMark) this.roxyMark.setVisible(false);
-          bus.emit('toast', { text: 'A Mana Beast appeared nearby! And the forest holds more…', tone: 'bad' });
+          this.refreshMarkers();
+          bus.emit('toast', {
+            text: 'A Mana Beast appeared! And the forest holds more…',
+            tone: 'bad',
+          });
         }
       }),
       bus.on('battle:end', ({ won, instanceId }) => {
         this.locked = false;
         if (won && instanceId) {
           useGame.getState().setFlag(`enemy_${instanceId}`);
-          const e = this.enemySprites.get(instanceId);
-          e?.sprite.destroy();
+          this.enemySprites.get(instanceId)?.sprite.destroy();
           this.enemySprites.delete(instanceId);
         } else if (!won) {
-          this.player.setPosition(SPAWN.x, SPAWN.y);
+          this.player.setPosition(spawn.x, spawn.y);
         }
       }),
     );
@@ -133,12 +140,12 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private buildMap() {
-    const map = buildVillage();
+  private buildTiles() {
+    const grid = this.map.build();
     this.obstacles = this.physics.add.staticGroup();
-    for (let y = 0; y < MAP_H; y++) {
-      for (let x = 0; x < MAP_W; x++) {
-        const code = map[y][x];
+    for (let y = 0; y < this.map.height; y++) {
+      for (let x = 0; x < this.map.width; x++) {
+        const code = grid[y][x];
         this.add.image(x * TILE, y * TILE, TILE_TEXTURE[code]).setOrigin(0).setDepth(0);
         if (COLLIDE.has(code)) {
           const rect = this.add.rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE, TILE);
@@ -150,38 +157,46 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private placeNpcs() {
-    for (const placement of NPCS) {
-      const pos = { x: placement.tx * TILE + TILE / 2, y: placement.ty * TILE + TILE / 2 };
-      const sprite = this.add.image(pos.x, pos.y, placement.sprite).setDepth(pos.y);
+    for (const placement of this.map.npcs) {
+      const x = placement.tx * TILE + TILE / 2;
+      const y = placement.ty * TILE + TILE / 2;
+      const sprite = this.add.image(x, y, placement.sprite).setDepth(y);
+      const mark = this.add
+        .text(x, y - 30, placement.marker === 'quest' ? '！' : '💬', {
+          fontSize: '15px',
+          color: '#ffd56b',
+        })
+        .setOrigin(0.5)
+        .setDepth(100000);
+      mark.setData('placement', placement);
+      this.tweens.add({ targets: mark, y: y - 34, yoyo: true, repeat: -1, duration: 700 });
       this.npcSprites.push({ placement, sprite });
-      if (placement.kind === 'lesson') {
-        this.roxyMark = this.add
-          .text(pos.x, pos.y - 30, '！', { fontSize: '16px', color: '#ffd56b' })
-          .setOrigin(0.5)
-          .setDepth(100000)
-          .setVisible(!useGame.getState().flags.roxyIntroDone);
-      } else {
-        const mark = this.add
-          .text(pos.x, pos.y - 30, '💬', { fontSize: '14px' })
-          .setOrigin(0.5)
-          .setDepth(100000);
-        this.tweens.add({ targets: mark, y: pos.y - 34, yoyo: true, repeat: -1, duration: 700 });
-      }
+      this.markers.push(mark);
+    }
+    this.refreshMarkers();
+  }
+
+  private markers: Phaser.GameObjects.Text[] = [];
+  private refreshMarkers() {
+    const flags = useGame.getState().flags;
+    for (const mark of this.markers) {
+      const p = mark.getData('placement') as NpcPlacement;
+      if (p?.marker === 'quest' && p.doneFlag) mark.setVisible(!flags[p.doneFlag]);
     }
   }
 
   private placeSigns() {
-    for (const s of SIGNS) {
-      const x = s.tx * TILE + TILE / 2;
-      const y = s.ty * TILE + TILE / 2;
-      const sprite = this.add.image(x, y, 'sign').setDepth(y);
-      this.signSprites.push({ vocabId: s.vocabId, sprite });
+    for (const placement of this.map.signs) {
+      const x = placement.tx * TILE + TILE / 2;
+      const y = placement.ty * TILE + TILE / 2;
+      const sprite = this.add.image(x, y, placement.sprite ?? 'sign').setDepth(y);
+      this.signSprites.push({ placement, sprite });
     }
   }
 
   private placeItems() {
     const flags = useGame.getState().flags;
-    for (const it of ITEMS) {
+    for (const it of this.map.items) {
       if (flags[`item_${it.id}`]) continue;
       const x = it.tx * TILE + TILE / 2;
       const y = it.ty * TILE + TILE / 2;
@@ -193,17 +208,16 @@ export class WorldScene extends Phaser.Scene {
 
   private refreshEnemies() {
     const flags = useGame.getState().flags;
-    const spawn = (p: EnemyPlacement) => {
-      if (this.enemySprites.has(p.id)) return;
-      if (flags[`enemy_${p.id}`]) return;
-      if (p.requiresFlag && !flags[p.requiresFlag]) return;
+    for (const p of this.map.enemies) {
+      if (this.enemySprites.has(p.id)) continue;
+      if (flags[`enemy_${p.id}`]) continue;
+      if (p.requiresFlag && !flags[p.requiresFlag]) continue;
       const x = p.tx * TILE + TILE / 2;
       const y = p.ty * TILE + TILE / 2;
       const sprite = this.add.image(x, y, 'beast').setDepth(y);
       this.tweens.add({ targets: sprite, y: y - 4, yoyo: true, repeat: -1, duration: 700 });
       this.enemySprites.set(p.id, { enemyId: p.enemyId, sprite });
-    };
-    ENEMIES.forEach(spawn);
+    }
   }
 
   private lock() {
@@ -227,21 +241,23 @@ export class WorldScene extends Phaser.Scene {
     for (const { placement, sprite } of this.npcSprites) {
       consider(sprite.x, sprite.y, '💬 Space', () => {
         this.lock();
-        if (placement.kind === 'lesson') {
-          const done = useGame.getState().flags.roxyIntroDone;
-          bus.emit('dialogue:start', {
-            lines: done ? roxyAgainLines : roxyIntro,
-            tag: done ? 'roxy-again' : 'roxy-intro',
-          });
+        const done = placement.doneFlag && useGame.getState().flags[placement.doneFlag];
+        if (done && placement.afterDialogue) {
+          bus.emit('dialogue:start', { lines: placement.afterDialogue, tag: placement.afterTag });
         } else {
-          bus.emit('dialogue:start', { lines: sylphieLines, tag: 'sylphie' });
+          bus.emit('dialogue:start', { lines: placement.dialogue, tag: placement.tag });
         }
       });
     }
-    for (const { vocabId, sprite } of this.signSprites) {
-      consider(sprite.x, sprite.y, '📖 Space: Read', () => {
-        this.lock();
-        bus.emit('word:show', { vocabId });
+    for (const { placement, sprite } of this.signSprites) {
+      const label = placement.label ?? (placement.grammar ? '📘 Space' : '📖 Space: Read');
+      consider(sprite.x, sprite.y, label, () => {
+        if (placement.grammar) {
+          bus.emit('grammar:open', undefined);
+        } else if (placement.vocabId) {
+          this.lock();
+          bus.emit('word:show', { vocabId: placement.vocabId });
+        }
       });
     }
     for (const [id, { enemyId, sprite }] of this.enemySprites) {
@@ -255,6 +271,27 @@ export class WorldScene extends Phaser.Scene {
   private tryInteract() {
     if (this.locked || !useGame.getState().started) return;
     this.nearest()?.act();
+  }
+
+  private checkTransitions() {
+    if (this.time.now - this.arrivedAt < ARRIVAL_GRACE) return;
+    for (const t of this.map.transitions) {
+      const x = t.tx * TILE + TILE / 2;
+      const y = t.ty * TILE + TILE / 2;
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, x, y) < 22) {
+        this.transition(t);
+        return;
+      }
+    }
+  }
+
+  private transition(t: TransitionPlacement) {
+    const spawn = { x: t.toTx * TILE + TILE / 2, y: t.toTy * TILE + TILE / 2 };
+    useGame.getState().setPos(spawn.x, spawn.y, t.toMap);
+    this.cameras.main.fadeOut(180, 12, 10, 18);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.restart({ mapId: t.toMap, spawn });
+    });
   }
 
   update() {
@@ -295,6 +332,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.checkPickups();
+    this.checkTransitions();
 
     const target = this.nearest();
     if (target) {

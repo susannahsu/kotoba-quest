@@ -59,12 +59,42 @@ export const VOCAB: VocabEntry[] = [
   { id: 'chiisai', jp: '小さい', reading: 'ちいさい', romaji: 'chiisai', en: 'small', jlpt: 'N5', pos: 'adjective', tags: ['adj'] },
 ];
 
+// Extra dictionary entries: particles + common words that appear in dialogue.
+// Looked up for tap-to-learn, but NOT part of the combat/spell deck (VOCAB).
+export const EXTRA: VocabEntry[] = [
+  { id: 'p_wa', jp: 'は', reading: 'は', romaji: 'wa', en: 'topic particle (wa)', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_ga', jp: 'が', reading: 'が', romaji: 'ga', en: 'subject particle', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_wo', jp: 'を', reading: 'を', romaji: 'o', en: 'object particle', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_ni', jp: 'に', reading: 'に', romaji: 'ni', en: 'to, at (particle)', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_de', jp: 'で', reading: 'で', romaji: 'de', en: 'at, by, with (particle)', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_no', jp: 'の', reading: 'の', romaji: 'no', en: 'of (possessive particle)', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_to', jp: 'と', reading: 'と', romaji: 'to', en: 'and, with (particle)', jlpt: 'N5', pos: 'particle' },
+  { id: 'p_mo', jp: 'も', reading: 'も', romaji: 'mo', en: 'also, too (particle)', jlpt: 'N5', pos: 'particle' },
+  { id: 'kyou', jp: '今日', reading: 'きょう', romaji: 'kyou', en: 'today', jlpt: 'N5', pos: 'noun' },
+  { id: 'issho', jp: '一緒', reading: 'いっしょ', romaji: 'issho', en: 'together', jlpt: 'N5', pos: 'noun' },
+  { id: 'taisetsu', jp: '大切', reading: 'たいせつ', romaji: 'taisetsu', en: 'important, precious', jlpt: 'N5', pos: 'adjective' },
+  { id: 'choushi', jp: '調子', reading: 'ちょうし', romaji: 'choushi', en: 'condition, pace', jlpt: 'N4', pos: 'noun' },
+];
+
+/** Everything that can be looked up: the combat deck plus extras. */
+export const DICTIONARY: VocabEntry[] = [...VOCAB, ...EXTRA];
+
 export const VOCAB_BY_ID: Record<string, VocabEntry> = Object.fromEntries(
   VOCAB.map((v) => [v.id, v]),
 );
+const DICT_BY_ID: Record<string, VocabEntry> = Object.fromEntries(
+  DICTIONARY.map((v) => [v.id, v]),
+);
+const SURFACE_INDEX: Record<string, VocabEntry> = {};
+for (const v of DICTIONARY) if (!(v.jp in SURFACE_INDEX)) SURFACE_INDEX[v.jp] = v;
 
 export function getVocab(id: string): VocabEntry | undefined {
-  return VOCAB_BY_ID[id];
+  return DICT_BY_ID[id];
+}
+
+/** Look up a word by its surface form (the kanji/kana as written). */
+export function lookupSurface(text: string): VocabEntry | undefined {
+  return SURFACE_INDEX[text];
 }
 
 export function vocabByTag(tag: string): VocabEntry[] {

@@ -10,6 +10,7 @@ export type GameEvents = {
   'battle:start': { enemyId: string; instanceId?: string };
   'battle:end': { won: boolean; enemyId: string; instanceId?: string };
   'toast': { text: string; tone?: 'info' | 'good' | 'bad' };
+  'grammar:open': undefined;
   'game:start': undefined;
 };
 

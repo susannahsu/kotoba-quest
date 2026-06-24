@@ -4,7 +4,7 @@
 //  - Roxy: water-blue waist-length braids, black wizard hat, robe, gem staff (Migurd mage)
 //  - Sylphiette: pale-green hair, green tunic
 import Phaser from 'phaser';
-import { TILE } from '../maps/village';
+import { TILE } from '../maps/tiles';
 
 type Facing = 'down' | 'up' | 'side';
 
@@ -33,6 +33,7 @@ export class BootScene extends Phaser.Scene {
     this.makePlayer();
     this.makeNpc('roxy', { skin: 0xf3d3ad, hair: 0x7e9be8, outfit: 0xeaeefb, eye: 0x6f86d6, hat: 0x2b2b3a, braids: 0x7e9be8, staff: true });
     this.makeNpc('sylphie', { skin: 0xf0cda2, hair: 0xbfe3c0, outfit: 0x8fc795, eye: 0x6fae72 });
+    this.makeNpc('zenith', { skin: 0xf3d6b0, hair: 0xe2c879, outfit: 0xcf7d96, eye: 0x6f86d6 });
     this.makeBeast();
     this.registerAnims();
     this.scene.start('world');
@@ -105,6 +106,48 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(0x6f4a2c, 1).fillRoundedRect(7, 4, 18, 28, 3);
       g.fillStyle(0x5a3a22, 1).fillRect(10, 8, 12, 24);
       g.fillStyle(0xffd56b, 1).fillCircle(19, 20, 1.6);
+    });
+
+    // --- interior tiles ---
+    tex('floor', () => {
+      g.fillStyle(0x9a7850, 1).fillRect(0, 0, TILE, TILE);
+      g.fillStyle(0x8a6a45, 1).fillRect(0, 10, TILE, 2).fillRect(0, 22, TILE, 2);
+      g.fillStyle(0x7a5d3c, 1).fillRect(15, 0, 2, TILE);
+    });
+    tex('wall_int', () => {
+      g.fillStyle(0x5d5068, 1).fillRect(0, 0, TILE, TILE);
+      g.fillStyle(0x6b5d78, 1)
+        .fillRect(1, 1, 14, 7)
+        .fillRect(17, 1, 14, 7)
+        .fillRect(8, 10, 16, 7)
+        .fillRect(1, 19, 14, 7)
+        .fillRect(17, 19, 14, 7);
+    });
+    tex('rug', () => {
+      g.fillStyle(0x9a7850, 1).fillRect(0, 0, TILE, TILE);
+      g.fillStyle(0x8a3b4f, 1).fillRect(2, 2, TILE - 4, TILE - 4);
+      g.fillStyle(0xb9556b, 1).fillRect(6, 6, TILE - 12, TILE - 12);
+      g.fillStyle(0xe8c06b, 1).fillRect(13, 13, 6, 6);
+    });
+    tex('table', () => {
+      g.fillStyle(0x9a7850, 1).fillRect(0, 0, TILE, TILE);
+      g.fillStyle(0x6f4a2c, 1).fillRoundedRect(3, 5, 26, 22, 4);
+      g.fillStyle(0x8a5e38, 1).fillRect(5, 7, 22, 8);
+    });
+    tex('shelf', () => {
+      g.fillStyle(0x5d5068, 1).fillRect(0, 0, TILE, TILE);
+      g.fillStyle(0x6f4a2c, 1).fillRect(2, 1, 28, 30);
+      g.fillStyle(0x4a3120, 1).fillRect(2, 10, 28, 2).fillRect(2, 20, 28, 2);
+      const spines = [0xff7a59, 0x5b8cff, 0x5fbf77, 0xffd56b, 0x9d6bff];
+      for (let i = 0; i < 5; i++) {
+        g.fillStyle(spines[i], 1).fillRect(4 + i * 5, 2, 4, 7).fillRect(4 + i * 5, 12, 4, 7);
+      }
+    });
+    tex('door_out', () => {
+      g.fillStyle(0x9a7850, 1).fillRect(0, 0, TILE, TILE);
+      g.fillStyle(0x3a2a1a, 1).fillRoundedRect(6, 2, 20, 28, 3);
+      g.fillStyle(0x5a3a22, 1).fillRect(9, 5, 14, 25);
+      g.fillStyle(0xffd56b, 1).fillCircle(19, 18, 1.6);
     });
 
     g.destroy();

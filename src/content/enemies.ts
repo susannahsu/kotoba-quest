@@ -11,6 +11,16 @@ export const ENEMIES: Record<string, EnemyDef> = {
     textureKey: 'beast',
     deck: ['mizu', 'mahou', 'kotoba'],
   },
+  greatbeast: {
+    id: 'greatbeast',
+    name: 'Great Mana Beast',
+    nameJp: '大魔物',
+    maxHp: 40,
+    power: 7,
+    xp: 50,
+    textureKey: 'beast',
+    deck: ['hi', 'kaze', 'mori', 'ki', 'tori'],
+  },
 };
 
 export function getEnemy(id: string): EnemyDef | undefined {

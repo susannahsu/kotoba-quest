@@ -17,6 +17,20 @@ export const CHARACTERS: Record<string, Character> = {
     color: '#7aa7ff',
     textureKey: 'roxy',
   },
+  sylphie: {
+    id: 'sylphie',
+    name: 'Sylphiette',
+    nameJp: 'シルフィ',
+    color: '#8fc795',
+    textureKey: 'sylphie',
+  },
+  zenith: {
+    id: 'zenith',
+    name: 'Zenith',
+    nameJp: 'ゼニス',
+    color: '#cf7d96',
+    textureKey: 'zenith',
+  },
   narrator: {
     id: 'narrator',
     name: 'Narrator',

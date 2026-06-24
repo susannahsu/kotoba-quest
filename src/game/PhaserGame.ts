@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { WorldScene } from './scenes/WorldScene';
-import { MAP_H, MAP_W, TILE } from './maps/village';
 
 export function createGame(): Phaser.Game {
   return new Phaser.Game({
@@ -21,11 +20,6 @@ export function createGame(): Phaser.Game {
       arcade: { gravity: { x: 0, y: 0 }, debug: false },
     },
     scene: [BootScene, WorldScene],
-    // hint for our map size; the scene sets real world bounds
-    callbacks: {},
-    // keep a stable logical size regardless of the map
     render: { antialias: false },
   });
 }
-
-export const WORLD_PX = { w: MAP_W * TILE, h: MAP_H * TILE };

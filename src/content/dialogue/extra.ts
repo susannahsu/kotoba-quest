@@ -48,3 +48,37 @@ export const roxyAgainLines: DialogueLine[] = [
     en: "You're doing great! Try the words you've learned in battle.",
   },
 ];
+
+// Zenith — Rudeus's mother, at home. Teaches 家族 (family) and 本 (book).
+export const zenithLines: DialogueLine[] = [
+  {
+    speaker: 'zenith',
+    segments: [{ text: 'おかえり、ルーディ。' }],
+    romaji: 'Okaeri, Rudi.',
+    en: 'Welcome home, Rudy.',
+  },
+  {
+    speaker: 'zenith',
+    segments: [
+      { text: '家族', reading: 'かぞく', vocabId: 'kazoku' },
+      { text: 'は' },
+      { text: '大切', reading: 'たいせつ' },
+      { text: 'よ。' },
+    ],
+    romaji: 'Kazoku wa taisetsu yo.',
+    en: 'Family is precious.',
+    grammarNote: 'wa',
+  },
+  {
+    speaker: 'zenith',
+    segments: [
+      { text: '本', reading: 'ほん', vocabId: 'hon' },
+      { text: 'を' },
+      { text: '読', reading: 'よ' },
+      { text: 'んでね。' },
+    ],
+    romaji: 'Hon o yonde ne.',
+    en: 'Read your books, okay?',
+    grammarNote: 'wo',
+  },
+];

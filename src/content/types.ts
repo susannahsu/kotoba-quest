@@ -33,6 +33,7 @@ export interface DialogueLine {
   romaji?: string;
   en: string;
   grammar?: string;
+  grammarNote?: string; // id into the grammar notebook (unlocks on encounter)
   emotion?: string;
 }
 

@@ -5,7 +5,7 @@ import { Bar } from './Bar';
 export function HUD({
   onOpenMenu,
 }: {
-  onOpenMenu: (m: 'grimoire' | 'settings' | 'training' | 'quests') => void;
+  onOpenMenu: (m: 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar') => void;
 }) {
   const name = useGame((s) => s.playerName);
   const level = useGame((s) => s.level);
@@ -50,6 +50,13 @@ export function HUD({
           title="Quests"
         >
           📜
+        </button>
+        <button
+          onClick={() => onOpenMenu('grammar')}
+          className="rounded-lg bg-ink/80 px-3 py-2 text-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30"
+          title="Grammar notes"
+        >
+          📘
         </button>
         <button
           onClick={() => onOpenMenu('grimoire')}

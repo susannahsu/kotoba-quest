@@ -3,7 +3,7 @@ import { toKana } from 'wanakana';
 import type { Challenge } from '@/content/types';
 import { useGame } from '@/state/store';
 import { getEnemy } from '@/content/enemies';
-import { getVocab } from '@/content/vocab/n5-starter';
+import { VOCAB_BY_ID, getVocab } from '@/content/vocab/n5-starter';
 import { checkAnswer, damageFor, makeChallenge } from '@/systems/combat/challenges';
 import { MANA_BOLT, MP_COST, SPELLS } from '@/systems/combat/spells';
 import { speak } from '@/systems/japanese/tts';
@@ -42,7 +42,10 @@ export function BattleScreen({
   const maxMp = useGame((s) => s.maxMp);
   const grimoire = useGame((s) => s.grimoire);
 
-  const deck = useMemo(() => (grimoire.length ? grimoire : enemy.deck), [grimoire, enemy]);
+  const deck = useMemo(() => {
+    const usable = grimoire.filter((id) => VOCAB_BY_ID[id]);
+    return usable.length ? usable : enemy.deck;
+  }, [grimoire, enemy]);
 
   const [enemyHp, setEnemyHp] = useState(enemy.maxHp);
   const [challenge, setChallenge] = useState<Challenge | null>(null);

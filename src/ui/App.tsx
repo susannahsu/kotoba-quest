@@ -11,11 +11,12 @@ import { Grimoire } from './components/Grimoire';
 import { SettingsPanel } from './components/SettingsPanel';
 import { TrainingScreen } from './components/TrainingScreen';
 import { QuestLog } from './components/QuestLog';
+import { GrammarPanel } from './components/GrammarPanel';
 import { TitleScreen } from './components/TitleScreen';
 import { WordPopup } from './components/WordPopup';
 import { Toasts, type ToastItem } from './components/Toasts';
 
-type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | null;
+type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | null;
 
 export function App() {
   const started = useGame((s) => s.started);
@@ -56,6 +57,7 @@ export function App() {
         audio.playMusic('battle');
       }),
       bus.on('word:show', (p) => setWord(p.vocabId)),
+      bus.on('grammar:open', () => setMenu('grammar')),
       bus.on('toast', (t) => {
         const id = Math.random().toString(36).slice(2);
         setToasts((prev) => [...prev, { id, ...t }]);
@@ -96,6 +98,7 @@ export function App() {
       {menu === 'settings' && <SettingsPanel onClose={() => setMenu(null)} />}
       {menu === 'training' && <TrainingScreen onClose={() => setMenu(null)} />}
       {menu === 'quests' && <QuestLog onClose={() => setMenu(null)} />}
+      {menu === 'grammar' && <GrammarPanel onClose={() => setMenu(null)} />}
 
       {word && (
         <WordPopup
