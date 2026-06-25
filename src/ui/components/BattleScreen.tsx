@@ -41,11 +41,13 @@ export function BattleScreen({
   const mp = useGame((s) => s.mp);
   const maxMp = useGame((s) => s.maxMp);
   const grimoire = useGame((s) => s.grimoire);
+  const mastery = useGame((s) => s.mastery);
 
+  // Combat is application: only use words you've actually learned (Stage ≥ 3).
   const deck = useMemo(() => {
-    const usable = grimoire.filter((id) => VOCAB_BY_ID[id]);
-    return usable.length ? usable : enemy.deck;
-  }, [grimoire, enemy]);
+    const learned = grimoire.filter((id) => VOCAB_BY_ID[id] && (mastery[id]?.stage ?? 0) >= 3);
+    return learned.length ? learned : enemy.deck;
+  }, [grimoire, mastery, enemy]);
 
   const [enemyHp, setEnemyHp] = useState(enemy.maxHp);
   const [challenge, setChallenge] = useState<Challenge | null>(null);

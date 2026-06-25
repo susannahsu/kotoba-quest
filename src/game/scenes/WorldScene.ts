@@ -4,9 +4,7 @@
 import Phaser from 'phaser';
 import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
-import { audio } from '@/systems/audio/audio';
 import { touch } from '@/systems/input/touch';
-import { getVocab } from '@/content/vocab/n5-starter';
 import { COLLIDE, TILE, TILE_TEXTURE } from '../maps/tiles';
 import { getMap } from '../maps';
 import type { MapDef, NpcPlacement, SignPlacement, TransitionPlacement } from '../maps/types';
@@ -400,22 +398,18 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private checkPickups() {
+    if (this.locked) return;
     const px = this.player.x;
     const py = this.player.y;
     for (let i = this.itemSprites.length - 1; i >= 0; i--) {
       const item = this.itemSprites[i];
       if (Phaser.Math.Distance.Between(px, py, item.sprite.x, item.sprite.y) < PICKUP_DIST) {
-        const game = useGame.getState();
-        const v = getVocab(item.vocabId);
-        const isNew = game.capture(item.vocabId);
-        game.setFlag(`item_${item.id}`);
-        audio.sfx('capture');
-        bus.emit('toast', {
-          text: isNew ? `Found ${v?.jp}（${v?.reading}）— learned!` : `Found ${v?.jp} (already known)`,
-          tone: 'good',
-        });
+        useGame.getState().setFlag(`item_${item.id}`);
         item.sprite.destroy();
         this.itemSprites.splice(i, 1);
+        // Open the discovery card (it registers the word + plays its sound).
+        this.locked = true;
+        bus.emit('word:show', { vocabId: item.vocabId });
       }
     }
   }

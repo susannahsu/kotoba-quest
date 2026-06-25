@@ -23,6 +23,7 @@ export interface MasteryRecord {
   card: SerializedCard;
   seen: number;
   correct: number;
+  stage: number; // mastery-ladder stage (0 locked … 6 mastered)
 }
 
 function serialize(c: Card): SerializedCard {
@@ -73,7 +74,7 @@ export function masteryFromCard(card: SerializedCard): number {
 }
 
 export function newMastery(): MasteryRecord {
-  return { card: newCard(), seen: 0, correct: 0 };
+  return { card: newCard(), seen: 0, correct: 0, stage: 0 };
 }
 
 export function reviewMastery(m: MasteryRecord, correct: boolean, fast = false): MasteryRecord {
@@ -81,6 +82,7 @@ export function reviewMastery(m: MasteryRecord, correct: boolean, fast = false):
     card: review(m.card, correct, fast),
     seen: m.seen + 1,
     correct: m.correct + (correct ? 1 : 0),
+    stage: m.stage ?? 0,
   };
 }
 
@@ -103,6 +105,7 @@ export function gradeMastery(m: MasteryRecord, grade: Grade): MasteryRecord {
     card: serialize(log[GRADE_RATING[grade]].card),
     seen: m.seen + 1,
     correct: m.correct + (grade === 'again' ? 0 : 1),
+    stage: m.stage ?? 0,
   };
 }
 

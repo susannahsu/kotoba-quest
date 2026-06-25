@@ -90,6 +90,10 @@ tests/         Vitest unit tests
 - **M4 (in progress):** story cutscenes + opening prologue + chapter cards;
   per-character voices; mobile touch controls (D-pad + action); accessibility
   (easy-read text, Esc-to-close, ARIA). Remaining: recorded audio, full jmdict import.
+- **Learning model (Duolingo-informed):** every word climbs a **mastery ladder**
+  (👁 Seen → 👂 Heard → 📖 Read → ✍️ Written → 🗣 Used → ⭐ Mastered). Each feature has one
+  job: **Discover** in the world (cards) → climb stages in step-by-step **Lessons** (🎓) →
+  **Apply** in battle (Stage ≥ 3) → **Review** via SRS (🧠).
 
 ## ⚖️ Legal & credits
 

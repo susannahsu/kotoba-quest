@@ -2,7 +2,7 @@ import { useGame } from '@/state/store';
 import { isDue } from '@/systems/srs/srs';
 import { Bar } from './Bar';
 
-type MenuKey = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'worldmap';
+type MenuKey = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'worldmap' | 'learn';
 
 const BTN =
   'grid h-12 min-w-[3rem] place-items-center rounded-xl bg-ink/85 px-3 text-2xl leading-none ring-1 ring-white/10 backdrop-blur transition hover:bg-arcane/30';
@@ -43,6 +43,9 @@ export function HUD({ onOpenMenu }: { onOpenMenu: (m: MenuKey) => void }) {
 
       {/* Buttons, top-right */}
       <div className="ui-interactive absolute right-3 top-3 flex gap-2">
+        <button className={BTN} title="Learn (lessons)" onClick={() => onOpenMenu('learn')}>
+          🎓
+        </button>
         <button className={BTN} title="World map" onClick={() => onOpenMenu('worldmap')}>
           🗺️
         </button>

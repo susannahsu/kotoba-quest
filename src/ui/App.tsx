@@ -14,6 +14,8 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { TrainingScreen } from './components/TrainingScreen';
 import { QuestLog } from './components/QuestLog';
 import { GrammarPanel } from './components/GrammarPanel';
+import { LearnHub } from './components/LearnHub';
+import { LessonScreen } from './components/LessonScreen';
 import { Minimap } from './components/Minimap';
 import { WorldMap } from './components/WorldMap';
 import { TitleScreen } from './components/TitleScreen';
@@ -22,7 +24,16 @@ import { CutsceneScreen } from './components/CutsceneScreen';
 import { TouchControls } from './components/TouchControls';
 import { Toasts, type ToastItem } from './components/Toasts';
 
-type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'worldmap' | null;
+type Menu =
+  | 'grimoire'
+  | 'settings'
+  | 'training'
+  | 'quests'
+  | 'grammar'
+  | 'worldmap'
+  | 'learn'
+  | 'lesson'
+  | null;
 
 export function App() {
   const started = useGame((s) => s.started);
@@ -134,6 +145,8 @@ export function App() {
       {menu === 'quests' && <QuestLog onClose={() => setMenu(null)} />}
       {menu === 'grammar' && <GrammarPanel onClose={() => setMenu(null)} />}
       {menu === 'worldmap' && <WorldMap onClose={() => setMenu(null)} />}
+      {menu === 'learn' && <LearnHub onClose={() => setMenu(null)} onStart={() => setMenu('lesson')} />}
+      {menu === 'lesson' && <LessonScreen onClose={() => setMenu('learn')} />}
 
       {word && (
         <WordPopup

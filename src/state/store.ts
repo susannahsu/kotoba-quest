@@ -43,6 +43,9 @@ interface GameActions {
   answer: (vocabId: string, correct: boolean, fast?: boolean) => void;
   grade: (vocabId: string, grade: Grade) => void;
   masteryOf: (vocabId: string) => number;
+  discover: (vocabId: string) => boolean; // returns true if newly discovered
+  advanceStage: (vocabId: string, toStage: number) => void;
+  stageOf: (vocabId: string) => number;
   damage: (n: number) => void;
   heal: (n: number) => void;
   spendMp: (n: number) => void;
@@ -123,6 +126,28 @@ export const useGame = create<GameStore>()(
         }),
 
       masteryOf: (vocabId) => masteryScore(get().mastery[vocabId]),
+
+      discover: (vocabId) => {
+        const had = get().grimoire.includes(vocabId);
+        set((s) => {
+          const rec = s.mastery[vocabId] ?? newMastery();
+          return {
+            grimoire: had ? s.grimoire : [...s.grimoire, vocabId],
+            mastery: { ...s.mastery, [vocabId]: { ...rec, stage: Math.max(rec.stage ?? 0, 1) } },
+          };
+        });
+        return !had;
+      },
+
+      advanceStage: (vocabId, toStage) =>
+        set((s) => {
+          const rec = s.mastery[vocabId] ?? newMastery();
+          return {
+            mastery: { ...s.mastery, [vocabId]: { ...rec, stage: Math.max(rec.stage ?? 0, toStage) } },
+          };
+        }),
+
+      stageOf: (vocabId) => get().mastery[vocabId]?.stage ?? 0,
 
       damage: (n) => set((s) => ({ hp: clamp(s.hp - n, 0, s.maxHp) })),
       heal: (n) => set((s) => ({ hp: clamp(s.hp + n, 0, s.maxHp) })),
