@@ -96,6 +96,16 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <Toggle label="Music" value={settings.music} onChange={(v) => update({ music: v })} />
         <Toggle label="Sound effects" value={settings.sfx} onChange={(v) => update({ sfx: v })} />
         <Toggle label="Dark mode" value={settings.darkMode} onChange={(v) => update({ darkMode: v })} />
+        <Toggle
+          label="Touch controls"
+          value={settings.touchControls}
+          onChange={(v) => update({ touchControls: v })}
+        />
+        <Toggle
+          label="Easy-read text"
+          value={settings.dyslexiaFont}
+          onChange={(v) => update({ dyslexiaFont: v })}
+        />
 
         <Row label="Text speed">
           <input

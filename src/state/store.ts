@@ -66,6 +66,8 @@ const DEFAULT_SETTINGS: Settings = {
   textSpeed: 28,
   darkMode: true,
   zoom: 1.6,
+  touchControls: false,
+  dyslexiaFont: false,
 };
 
 function freshData(): Omit<GameData, 'settings'> {

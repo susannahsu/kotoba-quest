@@ -1,3 +1,4 @@
+import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
 import { audio } from '@/systems/audio/audio';
 
@@ -24,6 +25,7 @@ export function TitleScreen() {
             audio.init();
             audio.playMusic('town');
             newGame();
+            bus.emit('cutscene:start', { id: 'prologue' });
           }}
           className="mt-8 rounded-xl bg-arcane px-8 py-3 text-lg font-bold text-white shadow-lg ring-1 ring-white/20 transition hover:scale-105 hover:bg-arcane/90"
         >

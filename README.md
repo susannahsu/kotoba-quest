@@ -87,8 +87,9 @@ tests/         Vitest unit tests
   grammar notebook that unlocks notes as you meet them; Sylphiette & Zenith NPCs.
 - **M3.5 (done):** minimap + world-map screen; Roa town with Eris & Ghislaine, the
   "Sword City" quest, and new vocab/grammar.
-- **M4:** deeper Roa story, jmdict-scale dictionary import, recorded audio,
-  mobile/touch controls, accessibility, polish & release.
+- **M4 (in progress):** story cutscenes + opening prologue + chapter cards;
+  per-character voices; mobile touch controls (D-pad + action); accessibility
+  (easy-read text, Esc-to-close, ARIA). Remaining: recorded audio, full jmdict import.
 
 ## ⚖️ Legal & credits
 

@@ -1,29 +1,41 @@
-// Japanese text-to-speech via the Web Speech API. Zero-asset pronunciation for the
-// MVP; recorded VO can replace this later behind the same `speak()` call.
-let jaVoice: SpeechSynthesisVoice | null = null;
+// Japanese text-to-speech via the Web Audio Speech API. Each character can have a
+// distinct voice via pitch/rate (and a different ja voice where the browser has more
+// than one). Zero-asset; recorded VO can replace this later behind the same `speak()`.
+export interface VoiceProfile {
+  pitch?: number;
+  rate?: number;
+  voiceIndex?: number; // which ja voice to prefer, when several exist
+}
+
+type SpeakArg = boolean | ({ enabled?: boolean } & VoiceProfile);
+
+let jaVoices: SpeechSynthesisVoice[] = [];
 
 function supported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
-function pickVoice(): void {
+function pickVoices(): void {
   if (!supported()) return;
-  const voices = window.speechSynthesis.getVoices();
-  jaVoice =
-    voices.find((v) => v.lang === 'ja-JP') ?? voices.find((v) => v.lang.startsWith('ja')) ?? null;
+  const all = window.speechSynthesis.getVoices();
+  jaVoices = all.filter((v) => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
 }
 
 if (supported()) {
-  pickVoice();
-  window.speechSynthesis.onvoiceschanged = pickVoice;
+  pickVoices();
+  window.speechSynthesis.onvoiceschanged = pickVoices;
 }
 
-export function speak(text: string, enabled = true): void {
+export function speak(text: string, arg: SpeakArg = true): void {
+  const opts = typeof arg === 'boolean' ? { enabled: arg } : arg;
+  const { enabled = true, pitch = 1, rate = 1, voiceIndex = 0 } = opts;
   if (!enabled || !supported() || !text) return;
+
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'ja-JP';
-  if (jaVoice) utter.voice = jaVoice;
-  utter.rate = 0.95;
+  if (jaVoices.length) utter.voice = jaVoices[voiceIndex % jaVoices.length] ?? jaVoices[0];
+  utter.pitch = Math.max(0, Math.min(2, pitch));
+  utter.rate = Math.max(0.5, Math.min(2, rate * 0.95));
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
 }

@@ -43,6 +43,7 @@ export interface Character {
   nameJp: string;
   color: string;
   textureKey: string;
+  voice?: { pitch?: number; rate?: number; voiceIndex?: number };
 }
 
 export interface EnemyDef {
@@ -79,4 +80,6 @@ export interface Settings {
   textSpeed: number;
   darkMode: boolean;
   zoom: number; // camera zoom (1.0–3.0)
+  touchControls: boolean;
+  dyslexiaFont: boolean;
 }

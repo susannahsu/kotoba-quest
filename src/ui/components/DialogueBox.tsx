@@ -25,7 +25,7 @@ export function DialogueBox({ lines, onDone }: { lines: DialogueLine[]; onDone: 
   const note = line.grammarNote ? getGrammar(line.grammarNote) : undefined;
 
   useEffect(() => {
-    speak(lineToJp(line), audio);
+    speak(lineToJp(line), { enabled: audio, ...speaker.voice });
     if (line.grammarNote) unlockGrammar(line.grammarNote);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);

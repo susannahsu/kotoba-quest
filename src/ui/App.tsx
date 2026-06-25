@@ -3,7 +3,9 @@ import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
 import { audio } from '@/systems/audio/audio';
 import { initQuests } from '@/systems/quests/quests';
+import { initStory } from '@/systems/story/story';
 import type { DialogueLine } from '@/content/types';
+import { getCutscene, type Beat } from '@/content/cutscenes';
 import { HUD } from './components/HUD';
 import { DialogueBox } from './components/DialogueBox';
 import { BattleScreen } from './components/BattleScreen';
@@ -16,6 +18,8 @@ import { Minimap } from './components/Minimap';
 import { WorldMap } from './components/WorldMap';
 import { TitleScreen } from './components/TitleScreen';
 import { WordPopup } from './components/WordPopup';
+import { CutsceneScreen } from './components/CutsceneScreen';
+import { TouchControls } from './components/TouchControls';
 import { Toasts, type ToastItem } from './components/Toasts';
 
 type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'worldmap' | null;
@@ -23,9 +27,14 @@ type Menu = 'grimoire' | 'settings' | 'training' | 'quests' | 'grammar' | 'world
 export function App() {
   const started = useGame((s) => s.started);
   const darkMode = useGame((s) => s.settings.darkMode);
+  const dyslexia = useGame((s) => s.settings.dyslexiaFont);
+  const touchControls = useGame((s) => s.settings.touchControls);
+  const showTouch =
+    touchControls || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
   const [dialogue, setDialogue] = useState<{ lines: DialogueLine[]; tag?: string } | null>(null);
   const [battle, setBattle] = useState<{ enemyId: string; instanceId?: string } | null>(null);
   const [word, setWord] = useState<string | null>(null);
+  const [cutscene, setCutscene] = useState<{ id: string; beats: Beat[] } | null>(null);
   const [menu, setMenu] = useState<Menu>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
@@ -33,7 +42,24 @@ export function App() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('easy-read', dyslexia);
+  }, [dyslexia]);
+
+  // Esc closes any open menu / popup.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenu(null);
+        setWord(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   useEffect(() => initQuests(), []);
+  useEffect(() => initStory(), []);
 
   // Initialise audio on the first user gesture (browser autoplay policy).
   useEffect(() => {
@@ -60,6 +86,10 @@ export function App() {
       }),
       bus.on('word:show', (p) => setWord(p.vocabId)),
       bus.on('grammar:open', () => setMenu('grammar')),
+      bus.on('cutscene:start', ({ id }) => {
+        const cs = getCutscene(id);
+        if (cs) setCutscene({ id, beats: cs.beats });
+      }),
       bus.on('toast', (t) => {
         const id = Math.random().toString(36).slice(2);
         setToasts((prev) => [...prev, { id, ...t }]);
@@ -71,8 +101,9 @@ export function App() {
 
   return (
     <>
-      {started && !dialogue && !battle && <HUD onOpenMenu={setMenu} />}
-      {started && !dialogue && !battle && <Minimap />}
+      {started && !dialogue && !battle && !cutscene && <HUD onOpenMenu={setMenu} />}
+      {started && !dialogue && !battle && !cutscene && <Minimap />}
+      {started && !dialogue && !battle && !cutscene && showTouch && <TouchControls />}
 
       {dialogue && (
         <DialogueBox
@@ -110,6 +141,17 @@ export function App() {
           onClose={() => {
             setWord(null);
             bus.emit('dialogue:end', { tag: 'word' });
+          }}
+        />
+      )}
+
+      {cutscene && (
+        <CutsceneScreen
+          beats={cutscene.beats}
+          onDone={() => {
+            const id = cutscene.id;
+            setCutscene(null);
+            bus.emit('cutscene:end', { id });
           }}
         />
       )}

@@ -5,6 +5,7 @@ import Phaser from 'phaser';
 import { bus } from '@/bridge/events';
 import { useGame } from '@/state/store';
 import { audio } from '@/systems/audio/audio';
+import { touch } from '@/systems/input/touch';
 import { getVocab } from '@/content/vocab/n5-starter';
 import { COLLIDE, TILE, TILE_TEXTURE } from '../maps/tiles';
 import { getMap } from '../maps';
@@ -136,6 +137,13 @@ export class WorldScene extends Phaser.Scene {
           this.player.setPosition(spawn.x, spawn.y);
         }
       }),
+      bus.on('cutscene:start', () => {
+        this.locked = true;
+      }),
+      bus.on('cutscene:end', () => {
+        this.locked = false;
+      }),
+      bus.on('touch:action', () => this.tryInteract()),
     );
 
     bus.emit('map:enter', { map: mapId });
@@ -349,10 +357,10 @@ export class WorldScene extends Phaser.Scene {
 
     let vx = 0;
     let vy = 0;
-    if (this.cursors.left.isDown || this.wasd.A.isDown) vx -= 1;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) vx += 1;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1;
+    if (this.cursors.left.isDown || this.wasd.A.isDown || touch.left) vx -= 1;
+    if (this.cursors.right.isDown || this.wasd.D.isDown || touch.right) vx += 1;
+    if (this.cursors.up.isDown || this.wasd.W.isDown || touch.up) vy -= 1;
+    if (this.cursors.down.isDown || this.wasd.S.isDown || touch.down) vy += 1;
     const len = Math.hypot(vx, vy) || 1;
     body.setVelocity((vx / len) * SPEED, (vy / len) * SPEED);
     this.player.setDepth(this.player.y);

@@ -78,3 +78,16 @@ ruby rt {
   background: #3a3450;
   border-radius: 4px;
 }
+
+/* Easy-read / dyslexia-friendly mode: more spacing + relaxed line height. */
+.easy-read #ui-root {
+  letter-spacing: 0.04em;
+  word-spacing: 0.16em;
+  line-height: 1.75;
+}
+.easy-read #ui-root .font-jp {
+  letter-spacing: 0.06em;
+}
+.easy-read ruby rt {
+  font-size: 0.6em;
+}
