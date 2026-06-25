@@ -78,6 +78,7 @@ export class WorldScene extends Phaser.Scene {
     this.placeNpcs();
     this.placeSigns();
     this.placeItems();
+    this.placeTransitions();
     this.refreshEnemies();
 
     const wpx = this.map.width * TILE;
@@ -85,7 +86,8 @@ export class WorldScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, wpx, hpx);
     this.cameras.main.setBounds(0, 0, wpx, hpx);
     this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
-    this.cameras.main.setZoom(2);
+    this.applyZoom();
+    this.cleanups.push(useGame.subscribe(() => this.applyZoom()));
     this.cameras.main.fadeIn(200, 12, 10, 18);
 
     const kb = this.input.keyboard!;
@@ -93,6 +95,11 @@ export class WorldScene extends Phaser.Scene {
     this.wasd = kb.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
     kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => this.tryInteract());
     kb.addKey(Phaser.Input.Keyboard.KeyCodes.E).on('down', () => this.tryInteract());
+    kb.addKey(Phaser.Input.Keyboard.KeyCodes.PLUS).on('down', () => this.zoomBy(0.2));
+    kb.addKey(Phaser.Input.Keyboard.KeyCodes.MINUS).on('down', () => this.zoomBy(-0.2));
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) =>
+      this.zoomBy(dy > 0 ? -0.2 : 0.2),
+    );
 
     this.prompt = this.add
       .text(0, 0, '', {
@@ -229,6 +236,36 @@ export class WorldScene extends Phaser.Scene {
     (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
   }
 
+  private applyZoom() {
+    const z = useGame.getState().settings.zoom ?? 1.6;
+    if (this.cameras.main.zoom !== z) this.cameras.main.setZoom(z);
+  }
+
+  private zoomBy(delta: number) {
+    const cur = useGame.getState().settings.zoom ?? 1.6;
+    const next = Math.round(Math.min(3, Math.max(1, cur + delta)) * 10) / 10;
+    useGame.getState().updateSettings({ zoom: next });
+  }
+
+  private placeTransitions() {
+    for (const t of this.map.transitions) {
+      if (!t.label) continue;
+      const x = t.tx * TILE + TILE / 2;
+      const y = t.ty * TILE + TILE / 2;
+      const lbl = this.add
+        .text(x, y - 16, t.label, {
+          fontFamily: 'Noto Sans JP, sans-serif',
+          fontSize: '10px',
+          color: '#ffffff',
+          backgroundColor: '#5b8cffdd',
+          padding: { x: 4, y: 2 },
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(99999);
+      this.tweens.add({ targets: lbl, y: y - 20, yoyo: true, repeat: -1, duration: 900 });
+    }
+  }
+
   private nearest(): Interactable | null {
     const px = this.player.x;
     const py = this.player.y;
@@ -290,12 +327,15 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private transition(t: TransitionPlacement) {
+    if (this.locked) return; // already transitioning — don't restart the fade each frame
+    this.locked = true;
     const spawn = { x: t.toTx * TILE + TILE / 2, y: t.toTy * TILE + TILE / 2 };
+    (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
     useGame.getState().setPos(spawn.x, spawn.y, t.toMap);
     this.cameras.main.fadeOut(180, 12, 10, 18);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.scene.restart({ mapId: t.toMap, spawn });
-    });
+    // Restart on a wall-clock timer rather than the frame-based fade event, so the
+    // transition always completes even if rendering is throttled.
+    window.setTimeout(() => this.scene.restart({ mapId: t.toMap, spawn }), 200);
   }
 
   update() {

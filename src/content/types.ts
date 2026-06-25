@@ -78,4 +78,5 @@ export interface Settings {
   sfx: boolean;
   textSpeed: number;
   darkMode: boolean;
+  zoom: number; // camera zoom (1.0–3.0)
 }

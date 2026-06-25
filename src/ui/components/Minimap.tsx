@@ -6,7 +6,7 @@ import { useGame } from '@/state/store';
 import { getMap } from '@/game/maps';
 import { MINIMAP_COLOR, TILE } from '@/game/maps/tiles';
 
-const MAX = 150;
+const MAX = 176;
 
 export function Minimap() {
   const startMap = useGame((s) => s.pos.map);

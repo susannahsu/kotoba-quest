@@ -65,6 +65,7 @@ const DEFAULT_SETTINGS: Settings = {
   sfx: true,
   textSpeed: 28,
   darkMode: true,
+  zoom: 1.6,
 };
 
 function freshData(): Omit<GameData, 'settings'> {

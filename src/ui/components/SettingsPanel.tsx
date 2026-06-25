@@ -107,6 +107,17 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           />
         </Row>
 
+        <Row label="Map zoom">
+          <input
+            type="range"
+            min={1}
+            max={3}
+            step={0.1}
+            value={settings.zoom ?? 1.6}
+            onChange={(e) => update({ zoom: Number(e.target.value) })}
+          />
+        </Row>
+
         <button
           onClick={() => {
             if (confirm('Erase your save and return to the title?')) {
